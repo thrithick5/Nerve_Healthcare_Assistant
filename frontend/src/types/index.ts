@@ -1,0 +1,72 @@
+export interface User {
+  id: number
+  email: string
+  username: string
+  full_name: string
+  created_at: string
+}
+
+export interface AuthResponse {
+  access_token: string
+  token_type: string
+  user: User
+}
+
+export interface ChatFile {
+  name: string
+  url: string
+  type: 'image' | 'pdf' | 'text'
+}
+
+export interface ChatMessage {
+  id: number
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  created_at?: string
+  timestamp?: string
+  sources?: Source[]
+  files?: ChatFile[]
+}
+
+export interface ChatRequest {
+  message: string
+  conversation_id?: number
+}
+
+export interface ChatResponse {
+  reply: string
+  conversation_id: number
+  disclaimer: string
+  sources?: Source[]
+  title?: string
+}
+
+export interface Source {
+  title: string
+  content: string
+  relevance_score: number
+  url?: string
+  source?: string
+}
+
+export interface Conversation {
+  id: number
+  title: string
+  created_at: string
+  updated_at: string
+  message_count: number
+}
+
+export interface HealthResponse {
+  status: string
+  version: string
+}
+
+export interface IngestResponse {
+  success: boolean
+  message: string
+  chunks_ingested: number
+  total_chunks?: number
+}
+
+export type Theme = 'light' | 'dark' | 'system'
