@@ -11,6 +11,9 @@ env/
 dist/
 build/
 data/chroma_db/
+data/*.db
+temp_uploads/
+.startup_backend.log
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

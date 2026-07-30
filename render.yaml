@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: nerve-healthcare-backend
+    env: docker
+    repo: https://github.com/thrithick5/Nerve_Healthcare_Assistant
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./data/healthcare.db
+      - key: CHROMA_PERSIST_DIR
+        value: /app/data/chroma_db
+      - key: COLLECTION_NAME
+        value: medical_knowledge
+      - key: MISTRAL_MODEL
+        value: mistral-large-latest
+      - key: MISTRAL_EMBEDDING_MODEL
+        value: mistral-embed
+      - key: DEBUG
+        value: false
+      - key: CORS_ORIGINS_EXTRA
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: SECRET_KEY
+        sync: false

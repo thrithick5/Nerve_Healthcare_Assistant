@@ -9,6 +9,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  base: process.env.GITHUB_PAGES ? '/Nerve_Healthcare_Assistant/' : '/',
   server: {
     host: '0.0.0.0',
     port: 5173,
