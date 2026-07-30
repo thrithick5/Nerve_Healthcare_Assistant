@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     MISTRAL_MODEL: str = "mistral-large-latest"
     MISTRAL_EMBEDDING_MODEL: str = "mistral-embed"
 
-    DATABASE_URL: str = "postgresql://localhost:5432/nerve_health"
+    DATABASE_URL: str = "sqlite:///./data/healthcare.db"
     CHROMA_PERSIST_DIR: str = "data/chroma_db"
     COLLECTION_NAME: str = "medical_knowledge"
 

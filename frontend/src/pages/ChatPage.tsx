@@ -49,6 +49,7 @@ export function ChatPage() {
         role: m.role,
         content: m.content,
         created_at: m.created_at,
+        sources: m.sources,
       })))
       setActiveConversationId(id)
     } catch (err) {

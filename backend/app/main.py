@@ -3,13 +3,19 @@
 # Backend API: http://localhost:8000
 # API Docs: http://localhost:8000/docs
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import Settings
-from app.api.routes import router
-from app.dependencies import get_settings
-from app.database.connection import init_db
+import logging
 import os
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes import router
+from app.core.config import Settings
+from app.database.connection import init_db
+from app.dependencies import get_settings
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api.requests")
 
 settings = get_settings()
 
@@ -30,5 +36,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info("Request %s %s", request.method, request.url.path)
+    response = await call_next(request)
+    logger.info("Response %s %s %s", request.method, request.url.path, response.status_code)
+    return response
 
 app.include_router(router, prefix="/api/v1")

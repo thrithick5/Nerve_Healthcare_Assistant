@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from fastapi.responses import JSONResponse
 import os
+import json
+import ast
 from app.models.schemas import (
     ChatRequest, ChatResponse, ResetResponse, HealthResponse, Source,
     IngestResponse, RegisterRequest, LoginRequest, AuthResponse,
@@ -164,14 +166,24 @@ async def get_conversation(conversation_id: int, authorization: str = Header(def
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     messages = chat_service.get_conversation_messages(conversation_id, user.id)
+    msg_list = []
+    for m in messages:
+        msg_dict = {"role": m.role, "content": m.content, "created_at": str(m.created_at)}
+        if m.sources:
+            try:
+                msg_dict["sources"] = json.loads(m.sources)
+            except Exception:
+                try:
+                    msg_dict["sources"] = ast.literal_eval(m.sources)
+                except Exception:
+                    msg_dict["sources"] = None
+        msg_list.append(msg_dict)
+
     return {
         "id": conv.id,
         "title": conv.title,
         "created_at": str(conv.created_at),
-        "messages": [
-            {"role": m.role, "content": m.content, "created_at": str(m.created_at)}
-            for m in messages
-        ],
+        "messages": msg_list,
     }
 
 
@@ -305,26 +317,43 @@ async def chat(
     ).all()
 
     history = chat_service.get_history_for_llm(conv.id)
-    context = llm_service.retrieval_service.get_context(request.message)
-    sources = llm_service.retrieval_service.query(request.message)
 
     system_prompt = llm_service.system_prompt.format(disclaimer=settings.HEALTH_DISCLAIMER)
 
-    file_context_parts = []
-    for fc in file_contexts:
-        file_chunks = llm_service.retrieval_service.query_by_source(fc.source)
-        if file_chunks:
-            chunk_texts = "\n".join(c["content"] for c in file_chunks)
-            file_context_parts.append(f"Uploaded file ({fc.filename}):\n{chunk_texts}")
-    if file_context_parts:
-        system_prompt += f"\n\nUploaded file context:\n" + "\n\n".join(file_context_parts)
+    context = None
+    sources = []
 
-    if context:
-        system_prompt += f"\n\nRelevant medical context:\n{context}"
+    if request.file_sources:
+        file_chunks_total = 0
+        file_context_parts = []
+        for fc in file_contexts:
+            if fc.source not in request.file_sources:
+                continue
+            file_chunks = llm_service.retrieval_service.query_by_source(fc.source)
+            if file_chunks:
+                chunk_texts = "\n".join(c["content"] for c in file_chunks)
+                file_chunks_total += len(chunk_texts)
+                if len(chunk_texts.strip()) > 50:
+                    file_context_parts.append(f"Uploaded file ({fc.filename}):\n{chunk_texts}")
+                    sources.append({
+                        "title": f"Uploaded File: {fc.filename}",
+                        "content": chunk_texts[:200] + "...",
+                        "relevance_score": 1.0,
+                        "source": fc.source,
+                    })
+        if file_context_parts:
+            system_prompt += f"\n\nUploaded file context:\n" + "\n\n".join(file_context_parts)
+        if file_chunks_total <= 50:
+            system_prompt += "\n\nNOTE: The uploaded file OCR produced no readable text. The image could not be interpreted."
+    else:
+        context = llm_service.retrieval_service.get_context(request.message)
+        sources = llm_service.retrieval_service.query(request.message)
+        if context:
+            system_prompt += f"\n\nRelevant medical context:\n{context}"
 
     if settings.ENABLE_SCRAPER:
         try:
-            from app.services.scraper import MedicalScraper
+            from app.services.scraper.medical_scraper import MedicalScraper
             scraper = MedicalScraper()
             try:
                 scraper_sources = scraper.get_structured_info(request.message)
@@ -346,7 +375,7 @@ async def chat(
     )
 
     reply = response.choices[0].message.content.strip()
-    sources_str = str(sources) if sources else ""
+    sources_str = json.dumps(sources) if sources else ""
     chat_service.add_message(conv.id, "assistant", reply, sources_str)
 
     return ChatResponse(

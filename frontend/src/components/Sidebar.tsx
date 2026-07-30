@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Conversation, Theme, User } from '../types'
 
 interface SidebarProps {
@@ -33,6 +33,41 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState('')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const [width, setWidth] = useState(288)
+  const [isResizing, setIsResizing] = useState(false)
+
+  const startResizing = useCallback(() => {
+    setIsResizing(true)
+  }, [])
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  const resize = useCallback((mouseMoveEvent: MouseEvent) => {
+    const newWidth = Math.max(200, Math.min(mouseMoveEvent.clientX, 480))
+    setWidth(newWidth)
+  }, [])
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize)
+      window.addEventListener('mouseup', stopResizing)
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+    } else {
+      window.removeEventListener('mousemove', resize)
+      window.removeEventListener('mouseup', stopResizing)
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize)
+      window.removeEventListener('mouseup', stopResizing)
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+    }
+  }, [isResizing, resize, stopResizing])
 
   const filteredConversations = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -48,9 +83,12 @@ export function Sidebar({
       )}
 
       <aside
-        className={`fixed lg:relative z-40 h-full transition-all duration-300 flex flex-col ${
-          isOpen ? 'w-72' : 'w-0 overflow-hidden border-none'
-        } ${dark ? 'bg-[#171717] border-r border-[#2f2f2f]' : 'bg-gray-50 border-r border-gray-200'}`}
+        style={{ width: isOpen ? `${width}px` : '0px' }}
+        className={`fixed lg:relative z-40 h-full flex flex-col ${
+          isResizing ? '' : 'transition-[width] duration-300'
+        } ${!isOpen ? 'overflow-hidden border-none' : ''} ${
+          dark ? 'bg-[#171717] border-r border-[#2f2f2f]' : 'bg-gray-50 border-r border-gray-200'
+        }`}
       >
         {isOpen && (
           <>
@@ -230,6 +268,15 @@ export function Sidebar({
               </div>
             </div>
           </>
+        )}
+        {isOpen && (
+          <div
+            onMouseDown={startResizing}
+            className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-50 group/handle"
+            title="Drag to resize sidebar"
+          >
+            <div className={`w-0.5 h-full mx-auto transition-colors group-hover/handle:bg-blue-500/80 group-active/handle:bg-blue-600 ${isResizing ? 'bg-blue-500 w-1' : ''}`} />
+          </div>
         )}
       </aside>
     </>

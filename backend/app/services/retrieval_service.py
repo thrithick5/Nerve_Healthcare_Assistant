@@ -27,7 +27,7 @@ class RetrievalService:
             metadatas=metadatas
         )
 
-    def query(self, query_text: str, top_k: Optional[int] = None, min_score: float = 0.3) -> list[dict]:
+    def query(self, query_text: str, top_k: Optional[int] = None, min_score: float = 0.1) -> list[dict]:
         k = top_k or self.settings.TOP_K_RETRIEVAL
         query_embedding = self.embedding_service.embed(query_text)
         results = self.collection.query(

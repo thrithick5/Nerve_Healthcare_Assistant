@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost:5432/nerve_health")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/healthcare.db")
 is_sqlite = DATABASE_URL.startswith("sqlite")
 
 engine_kwargs = {}
