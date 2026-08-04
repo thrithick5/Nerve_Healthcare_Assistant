@@ -1,35 +1,43 @@
 # Deployment Guide: Nerve Healthcare Assistant
 
 This guide explains how to deploy the **Nerve Healthcare Assistant** application:
-- **Backend API**: Render (via Docker / Blueprint)
+- **Backend API**: Render (via Web Service - Free Tier, No Card Required)
 - **Frontend App**: Vercel (via GitHub integration)
 
 ---
 
-## 1. Deploying the Backend on Render
+## 1. Deploying the Backend on Render (Free Tier - No Card Required)
 
-### Method A: Render Blueprints (Recommended)
-1. Push your latest code changes to your GitHub repository: `https://github.com/thrithick5/Nerve_Healthcare_Assistant`.
-2. Log in to [Render Dashboard](https://dashboard.render.com/).
-3. Click **New +** -> **Blueprint**.
-4. Connect your GitHub repository (`thrithick5/Nerve_Healthcare_Assistant`).
-5. Render will automatically read `render.yaml`.
-6. Fill in the required secret environment variables in the Render Dashboard:
-   - `MISTRAL_API_KEY`: Your Mistral AI key.
-   - `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID.
-   - `SECRET_KEY`: A secure random string for JWT session tokens.
-   - `CORS_ORIGINS_EXTRA`: (Optional) Your Vercel frontend URL, e.g. `https://your-app-name.vercel.app`.
-7. Click **Apply**. Render will build the Docker container and deploy the backend.
+Use the **Web Service** option on Render to deploy completely free without providing credit card details:
 
-### Method B: Manual Web Service Setup
-1. Click **New +** -> **Web Service**.
-2. Select repository `Nerve_Healthcare_Assistant`.
-3. Set Environment to **Docker**.
-4. Set Docker Command to `Dockerfile Path`: `./backend/Dockerfile` and Build Context: `./backend`.
-5. Health Check Path: `/api/v1/health`.
-6. Add environment variables listed in `backend/.env.example`.
+1. Log in to [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** -> **Web Service**.
+3. Select **Build and deploy from a Git repository**, click **Next**, and connect your GitHub repository (`thrithick5/Nerve_Healthcare_Assistant`).
+4. Configure the settings as follows:
+   - **Name**: `nerve-healthcare-backend` (or any name you choose)
+   - **Language**: `Docker`
+   - **Branch**: `main`
+   - **Region**: Choose the closest location (e.g., Singapore or Oregon)
+   - **Root Directory**: Leave blank (or `./`)
+   - **Dockerfile Path**: `./backend/Dockerfile`
+   - **Docker Context**: `./backend`
+   - **Instance Type**: Select **Free** ($0/month)
+5. Expand **Advanced Settings**:
+   - **Health Check Path**: `/api/v1/health`
+6. Under **Environment Variables**, add the following key-value pairs:
+   - `DATABASE_URL` = `sqlite:///./data/healthcare.db`
+   - `CHROMA_PERSIST_DIR` = `/app/data/chroma_db`
+   - `COLLECTION_NAME` = `medical_knowledge`
+   - `MISTRAL_MODEL` = `mistral-large-latest`
+   - `MISTRAL_EMBEDDING_MODEL` = `mistral-embed`
+   - `DEBUG` = `false`
+   - `MISTRAL_API_KEY` = `<your-mistral-api-key>`
+   - `GOOGLE_CLIENT_ID` = `388676578583-74qqn1h809fk1j9qckrajakt78hutanl.apps.googleusercontent.com`
+   - `SECRET_KEY` = `<generate-a-random-secret-key>`
+   - `CORS_ORIGINS_EXTRA` = `https://your-vercel-app-name.vercel.app` (Add after deploying on Vercel)
 
-Once deployed, copy your Render backend URL (e.g. `https://nerve-healthcare-backend.onrender.com`).
+7. Click **Create Web Service**. Render will start building the Docker container and deploy your backend.
+8. Once deployed, copy your Render backend URL (e.g., `https://nerve-healthcare-backend.onrender.com`).
 
 ---
 
@@ -40,7 +48,7 @@ Once deployed, copy your Render backend URL (e.g. `https://nerve-healthcare-back
 3. Import your GitHub repository (`thrithick5/Nerve_Healthcare_Assistant`).
 4. In the project setup panel:
    - **Framework Preset**: Vite
-   - **Root Directory**: Select `frontend` (or click **Edit** and choose the `frontend` folder).
+   - **Root Directory**: Click **Edit** and select `frontend`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
 5. Under **Environment Variables**, add:
@@ -61,6 +69,6 @@ Once deployed, copy your Render backend URL (e.g. `https://nerve-healthcare-back
 
 ## Troubleshooting & Tips
 
-- **CORS Errors**: Check `CORS_ORIGINS_EXTRA` in Render. Note that Vercel domain URLs (`https://*.vercel.app`) are automatically allowed by backend regex. If using a custom domain, add it to `CORS_ORIGINS_EXTRA`.
-- **404 on Refresh**: `vercel.json` rewrites are configured to map all requests to `/index.html`. Make sure `frontend/vercel.json` is included in your git commit.
-- **Database Persistence**: SQLite database runs inside the container data volume. For production deployments with persistent database needs across rebuilds, configure a Render PostgreSQL database URL in `DATABASE_URL`.
+- **CORS Errors**: Vercel domain URLs (`https://*.vercel.app`) are automatically allowed by backend regex. If using a custom domain, add it to `CORS_ORIGINS_EXTRA` in Render.
+- **404 on Refresh**: `vercel.json` rewrites map all requests to `/index.html`.
+- **Render Free Tier Spin-Down**: Free instances on Render spin down after 15 minutes of inactivity. The first request after spin-down may take ~30 seconds to respond as the instance wakes up.
