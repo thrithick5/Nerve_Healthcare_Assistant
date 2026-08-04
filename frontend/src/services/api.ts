@@ -1,7 +1,14 @@
 import axios from 'axios'
 import type { AuthResponse, ChatResponse, Conversation, User } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL
+  if (!envUrl) return '/api'
+  const trimmed = envUrl.trim().replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

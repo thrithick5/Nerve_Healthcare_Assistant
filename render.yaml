@@ -5,6 +5,7 @@ services:
     repo: https://github.com/thrithick5/Nerve_Healthcare_Assistant
     branch: main
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /api/v1/health
     envVars:
       - key: DATABASE_URL

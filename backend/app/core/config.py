@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     ]
 
     CORS_ORIGINS_EXTRA: str = ""
+    CORS_ORIGIN_REGEX: str = r"https://.*\.vercel\.app"
 
     class Config:
         env_file = ".env"
