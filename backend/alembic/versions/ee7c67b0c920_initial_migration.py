@@ -61,7 +61,7 @@ def upgrade() -> None:
     sa.Column('source', sa.String(length=255), nullable=False),
     sa.Column('ocr_text', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], ),
+    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], name='conversation_files_conversation_id_fkey', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_conversation_files_id'), 'conversation_files', ['id'], unique=False)
