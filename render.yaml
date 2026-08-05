@@ -1,3 +1,9 @@
+databases:
+  - name: nerve-healthcare-db
+    plan: free
+    databaseName: nerve_healthcare
+    user: nerve
+
 services:
   - type: web
     name: nerve-healthcare-backend
@@ -9,7 +15,9 @@ services:
     healthCheckPath: /api/v1/health
     envVars:
       - key: DATABASE_URL
-        value: sqlite:///./data/healthcare.db
+        fromDatabase:
+          name: nerve-healthcare-db
+          property: connectionString
       - key: CHROMA_PERSIST_DIR
         value: /app/data/chroma_db
       - key: COLLECTION_NAME

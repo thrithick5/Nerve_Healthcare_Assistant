@@ -27,15 +27,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
+    const token = sessionStorage.getItem('token')
+    const savedUser = sessionStorage.getItem('user')
 
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser))
       } catch {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('user')
       }
     }
     setIsLoading(false)
@@ -43,28 +43,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await apiLogin(email, password)
-    localStorage.setItem('token', response.access_token)
-    localStorage.setItem('user', JSON.stringify(response.user))
+    sessionStorage.setItem('token', response.access_token)
+    sessionStorage.setItem('user', JSON.stringify(response.user))
     setUser(response.user)
   }
 
   const register = async (email: string, username: string, password: string, fullName: string) => {
     const response = await apiRegister(email, username, password, fullName)
-    localStorage.setItem('token', response.access_token)
-    localStorage.setItem('user', JSON.stringify(response.user))
+    sessionStorage.setItem('token', response.access_token)
+    sessionStorage.setItem('user', JSON.stringify(response.user))
     setUser(response.user)
   }
 
   const googleLogin = async (credential: string) => {
     const response = await apiGoogleLogin(credential)
-    localStorage.setItem('token', response.access_token)
-    localStorage.setItem('user', JSON.stringify(response.user))
+    sessionStorage.setItem('token', response.access_token)
+    sessionStorage.setItem('user', JSON.stringify(response.user))
     setUser(response.user)
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
     setUser(null)
   }
 
