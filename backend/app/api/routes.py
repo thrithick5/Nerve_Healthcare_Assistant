@@ -379,15 +379,24 @@ async def chat(
     reply = response.choices[0].message.content.strip()
 
     # Detect facility_finder tool call in LLM response
+    # The regex is intentionally flexible to handle different LLM whitespace formats
     facility_data = None
-    facility_match = re.search(r"```facility_finder\s*\n(\{.*?\})\s*\n```", reply, re.DOTALL)
+    facility_match = re.search(
+        r"```\s*facility_finder\s*\n?\s*(\{.*?\})\s*\n?\s*```",
+        reply,
+        re.DOTALL | re.IGNORECASE,
+    )
     if facility_match:
         try:
-            facility_params = json.loads(facility_match.group(1))
-            health_issue = facility_params.get("health_issue", "")
-            location = facility_params.get("location", "")
-            if health_issue and location:
-                from app.services.facility_finder_service import FacilityFinderService
+            raw_json = facility_match.group(1).strip()
+            facility_params = json.loads(raw_json)
+            health_issue = facility_params.get("health_issue", "").strip()
+            location = facility_params.get("location", "").strip()
+            # If the LLM didn't fill in location yet, use a generic fallback
+            # so we still generate a Maps search link the user can refine
+            if not location:
+                location = "nearby"
+            if health_issue:
                 ff = FacilityFinderService()
                 try:
                     facility_result = ff.find_facilities(health_issue, location)
@@ -399,16 +408,17 @@ async def chat(
                         "facilities": facility_result["facilities"],
                     }
                     reply = re.sub(
-                        r"```facility_finder\s*\n\{.*?\}\s*\n```",
+                        r"```\s*facility_finder\s*\n?\s*\{.*?\}\s*\n?\s*```",
                         "",
                         reply,
-                        flags=re.DOTALL,
+                        flags=re.DOTALL | re.IGNORECASE,
                     ).strip()
                     reply = f"{reply}\n\n{facility_md}" if reply else facility_md
                 finally:
                     ff.close()
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"facility_finder failed: {e}", exc_info=True)
 
     sources_str = json.dumps(sources) if sources else ""
     chat_service.add_message(conv.id, "assistant", reply, sources_str)
