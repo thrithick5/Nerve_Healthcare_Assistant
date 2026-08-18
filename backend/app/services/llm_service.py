@@ -69,7 +69,7 @@ class LLMService:
         sources = self.retrieval_service.query(message)
         history = self.conversation_service.get_history(conv.id)
 
-        system_prompt = self.system_prompt.format(disclaimer=self.settings.HEALTH_DISCLAIMER)
+        system_prompt = self.system_prompt.replace("{disclaimer}", self.settings.HEALTH_DISCLAIMER)
         if context:
             system_prompt += f"\n\nRelevant medical context:\n{context}"
 

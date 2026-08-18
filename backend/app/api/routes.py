@@ -320,7 +320,7 @@ async def chat(
 
     history = chat_service.get_history_for_llm(conv.id)
 
-    system_prompt = llm_service.system_prompt.format(disclaimer=settings.HEALTH_DISCLAIMER)
+    system_prompt = llm_service.system_prompt.replace("{disclaimer}", settings.HEALTH_DISCLAIMER)
 
     context = None
     sources = []
