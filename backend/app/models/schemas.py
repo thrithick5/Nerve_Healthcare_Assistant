@@ -55,11 +55,13 @@ class ChatRequest(BaseModel):
 
 
 class Source(BaseModel):
-    title: str
-    content: str
-    relevance_score: float
+    title: str = "Medical Source"
+    content: str = ""
+    relevance_score: float = 1.0
     url: Optional[str] = None
     source: Optional[str] = None
+
+    model_config = {"extra": "ignore"}
 
 
 class ChatResponse(BaseModel):
@@ -69,6 +71,8 @@ class ChatResponse(BaseModel):
     sources: Optional[list[Source]] = None
     title: Optional[str] = None
     facility_data: Optional[dict] = None
+
+    model_config = {"extra": "ignore"}
 
 
 class ConversationSummary(BaseModel):

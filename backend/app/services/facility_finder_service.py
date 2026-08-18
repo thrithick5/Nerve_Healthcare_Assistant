@@ -1,7 +1,8 @@
+from __future__ import annotations
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import quote_plus
-from typing import Optional
+from typing import Optional, List, Dict, Any, Union
 import re
 import json
 

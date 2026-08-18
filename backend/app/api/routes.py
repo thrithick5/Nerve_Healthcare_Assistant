@@ -381,6 +381,9 @@ async def chat(
     # Detect facility_finder tool call in LLM response
     # The regex is intentionally flexible to handle different LLM whitespace formats
     facility_data = None
+    req_lat = request.latitude
+    req_lng = request.longitude
+
     facility_match = re.search(
         r"```\s*facility_finder\s*\n?\s*(\{.*?\})\s*\n?\s*```",
         reply,
@@ -392,10 +395,6 @@ async def chat(
             facility_params = json.loads(raw_json)
             health_issue = facility_params.get("health_issue", "").strip()
             location = facility_params.get("location", "").strip()
-            # Use GPS coordinates from the request if available (user granted location permission)
-            req_lat = request.latitude
-            req_lng = request.longitude
-            # If no GPS and no city text, use empty string (Maps will show generic results)
             if not location and req_lat is None:
                 location = ""
             if health_issue:
@@ -422,16 +421,52 @@ async def chat(
                     ff.close()
         except Exception as e:
             import logging
-            logging.getLogger(__name__).error(f"facility_finder failed: {e}", exc_info=True)
+            logging.getLogger(__name__).error(f"facility_finder regex processing failed: {e}", exc_info=True)
+
+    # Automatic fallback: If facility_data wasn't triggered by LLM tool tag, check user query directly
+    if not facility_data:
+        facility_trigger_words = [
+            "hospital", "clinic", "nearest", "doctor", "pharmacy", "find me",
+            "around me", "near me", "emergency", "care center", "specialist"
+        ]
+        msg_lower = request.message.lower()
+        if any(w in msg_lower for w in facility_trigger_words):
+            try:
+                ff = FacilityFinderService()
+                try:
+                    facility_result = ff.find_facilities(
+                        request.message, "", latitude=req_lat, longitude=req_lng
+                    )
+                    facility_md = ff.format_facilities_as_markdown(facility_result)
+                    facility_data = {
+                        "specialty": facility_result["specialty"],
+                        "facility_types": facility_result["facility_types"],
+                        "search_url": facility_result["search_url"],
+                        "facilities": facility_result["facilities"],
+                    }
+                    reply = f"{reply}\n\n{facility_md}" if reply else facility_md
+                finally:
+                    ff.close()
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"automatic facility finder fallback failed: {e}", exc_info=True)
 
     sources_str = json.dumps(sources) if sources else ""
     chat_service.add_message(conv.id, "assistant", reply, sources_str)
+
+    parsed_sources = []
+    if sources:
+        for s in sources:
+            try:
+                parsed_sources.append(Source(**s))
+            except Exception:
+                pass
 
     response_data = {
         "reply": reply,
         "conversation_id": conv.id,
         "disclaimer": settings.HEALTH_DISCLAIMER,
-        "sources": [Source(**s) for s in sources] if sources else None,
+        "sources": parsed_sources if parsed_sources else None,
         "title": conv.title,
     }
     if facility_data:
