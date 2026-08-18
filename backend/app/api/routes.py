@@ -5,12 +5,13 @@ from fastapi.responses import JSONResponse
 import os
 import json
 import ast
+import re
 from app.models.schemas import (
     ChatRequest, ChatResponse, ResetResponse, HealthResponse, Source,
     IngestResponse, RegisterRequest, LoginRequest, AuthResponse,
     UserResponse, ConversationSummary, ConversationDetail,
     UserSettingsUpdate, ConversationRename, SearchRequest,
-    GoogleAuthRequest,
+    GoogleAuthRequest, FacilityRequest, FacilityResponse, FacilityItem,
 )
 from app.services.llm_service import LLMService
 from app.services.ingestion_service import IngestionService
@@ -21,10 +22,11 @@ from app.services.auth_service import (
 )
 from app.services.chat_history_service import ChatHistoryService
 from app.core.config import Settings
-from app.dependencies import get_settings, get_llm_service, get_ingestion_service, get_file_processor
+from app.dependencies import get_settings, get_llm_service, get_ingestion_service, get_file_processor, get_facility_finder
 from app.database.connection import get_db
 from app.database.models import ConversationFile
 from app.services.file_processor import FileProcessor
+from app.services.facility_finder_service import FacilityFinderService
 
 router = APIRouter()
 
@@ -375,16 +377,52 @@ async def chat(
     )
 
     reply = response.choices[0].message.content.strip()
+
+    # Detect facility_finder tool call in LLM response
+    facility_data = None
+    facility_match = re.search(r"```facility_finder\s*\n(\{.*?\})\s*\n```", reply, re.DOTALL)
+    if facility_match:
+        try:
+            facility_params = json.loads(facility_match.group(1))
+            health_issue = facility_params.get("health_issue", "")
+            location = facility_params.get("location", "")
+            if health_issue and location:
+                from app.services.facility_finder_service import FacilityFinderService
+                ff = FacilityFinderService()
+                try:
+                    facility_result = ff.find_facilities(health_issue, location)
+                    facility_md = ff.format_facilities_as_markdown(facility_result)
+                    facility_data = {
+                        "specialty": facility_result["specialty"],
+                        "facility_types": facility_result["facility_types"],
+                        "search_url": facility_result["search_url"],
+                        "facilities": facility_result["facilities"],
+                    }
+                    reply = re.sub(
+                        r"```facility_finder\s*\n\{.*?\}\s*\n```",
+                        "",
+                        reply,
+                        flags=re.DOTALL,
+                    ).strip()
+                    reply = f"{reply}\n\n{facility_md}" if reply else facility_md
+                finally:
+                    ff.close()
+        except Exception:
+            pass
+
     sources_str = json.dumps(sources) if sources else ""
     chat_service.add_message(conv.id, "assistant", reply, sources_str)
 
-    return ChatResponse(
-        reply=reply,
-        conversation_id=conv.id,
-        disclaimer=settings.HEALTH_DISCLAIMER,
-        sources=[Source(**s) for s in sources] if sources else None,
-        title=conv.title,
-    )
+    response_data = {
+        "reply": reply,
+        "conversation_id": conv.id,
+        "disclaimer": settings.HEALTH_DISCLAIMER,
+        "sources": [Source(**s) for s in sources] if sources else None,
+        "title": conv.title,
+    }
+    if facility_data:
+        response_data["facility_data"] = facility_data
+    return ChatResponse(**response_data)
 
 
 # ─── RESET ROUTE ──────────────────────────────────────────────────────────
@@ -444,3 +482,26 @@ async def search_medical(query: str, db: Session = Depends(get_db)):
         return {"query": query, "results": result}
     finally:
         scraper.close()
+
+
+# ─── FACILITY FINDER ROUTE ────────────────────────────────────────────────
+@router.post("/find-facilities", response_model=FacilityResponse)
+async def find_facilities(
+    request: FacilityRequest,
+    authorization: str = Header(default=""),
+    facility_finder: FacilityFinderService = Depends(get_facility_finder),
+):
+    token = extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    result = facility_finder.find_facilities(request.health_issue, request.location)
+    formatted_md = facility_finder.format_facilities_as_markdown(result)
+    facilities = [FacilityItem(**f) for f in result["facilities"]]
+    return FacilityResponse(
+        specialty=result["specialty"],
+        facility_types=result["facility_types"],
+        search_url=result["search_url"],
+        facilities=facilities,
+        formatted_markdown=formatted_md,
+    )

@@ -45,6 +45,7 @@ export function useChat(): UseChatReturn {
         content: response.reply,
         timestamp: new Date().toISOString(),
         sources: response.sources,
+        facility_data: response.facility_data,
       }
 
       setMessages((prev) => [...prev, assistantMsg])

@@ -66,6 +66,7 @@ class ChatResponse(BaseModel):
     disclaimer: str
     sources: Optional[list[Source]] = None
     title: Optional[str] = None
+    facility_data: Optional[dict] = None
 
 
 class ConversationSummary(BaseModel):
@@ -111,3 +112,27 @@ class ConversationRename(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str
+
+
+class FacilityRequest(BaseModel):
+    health_issue: str
+    location: str
+
+
+class FacilityItem(BaseModel):
+    name: str
+    rating: Optional[float] = None
+    review_count: Optional[int] = None
+    address: Optional[str] = ""
+    maps_url: str
+    source: str = "google_search"
+    specialty: Optional[str] = None
+    facility_type: Optional[str] = None
+
+
+class FacilityResponse(BaseModel):
+    specialty: str
+    facility_types: list[str]
+    search_url: str
+    facilities: list[FacilityItem]
+    formatted_markdown: str

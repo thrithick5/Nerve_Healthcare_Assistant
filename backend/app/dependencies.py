@@ -7,6 +7,7 @@ from app.services.llm_service import LLMService
 from app.services.ingestion_service import IngestionService
 from app.services.scraper import MedicalScraper
 from app.services.file_processor import FileProcessor
+from app.services.facility_finder_service import FacilityFinderService
 
 
 @lru_cache
@@ -58,3 +59,8 @@ def get_file_processor() -> FileProcessor:
     settings = get_settings()
     ingestion_service = get_ingestion_service()
     return FileProcessor(settings, ingestion_service)
+
+
+@lru_cache
+def get_facility_finder() -> FacilityFinderService:
+    return FacilityFinderService()

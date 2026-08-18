@@ -3,6 +3,7 @@ import type { ChatMessage } from '../types'
 import { formatTimestamp, copyToClipboard } from '../utils/helpers'
 import type { Source } from '../types'
 import { FormattedMarkdown } from './FormattedMarkdown'
+import { FacilityRecommendations } from './FacilityRecommendations'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -64,6 +65,9 @@ export function MessageBubble({ message, onShowSources }: MessageBubbleProps) {
             </button>
           )}
         </div>
+        {!isUser && message.facility_data && (
+          <FacilityRecommendations facilityData={message.facility_data} />
+        )}
       </div>
     </div>
   )

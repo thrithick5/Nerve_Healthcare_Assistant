@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AuthResponse, ChatResponse, Conversation, User } from '../types'
+import type { AuthResponse, ChatResponse, Conversation, User, FacilityData } from '../types'
 
 const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL
@@ -103,6 +103,10 @@ export async function uploadFile(file: File, filename: string): Promise<any> {
   return apiClient.post('/v1/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+}
+
+export async function findFacilities(healthIssue: string, location: string): Promise<FacilityData & { formatted_markdown: string }> {
+  return apiClient.post('/v1/find-facilities', { health_issue: healthIssue, location })
 }
 
 export default apiClient

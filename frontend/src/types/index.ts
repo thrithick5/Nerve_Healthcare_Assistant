@@ -26,6 +26,7 @@ export interface ChatMessage {
   timestamp?: string
   sources?: Source[]
   files?: ChatFile[]
+  facility_data?: FacilityData
 }
 
 export interface ChatRequest {
@@ -39,6 +40,7 @@ export interface ChatResponse {
   disclaimer: string
   sources?: Source[]
   title?: string
+  facility_data?: FacilityData
 }
 
 export interface Source {
@@ -47,6 +49,24 @@ export interface Source {
   relevance_score: number
   url?: string
   source?: string
+}
+
+export interface Facility {
+  name: string
+  rating?: number
+  review_count?: number
+  address?: string
+  maps_url: string
+  source: string
+  specialty?: string
+  facility_type?: string
+}
+
+export interface FacilityData {
+  specialty: string
+  facility_types: string[]
+  search_url: string
+  facilities: Facility[]
 }
 
 export interface Conversation {
