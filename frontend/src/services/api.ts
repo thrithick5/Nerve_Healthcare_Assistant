@@ -84,8 +84,20 @@ export async function searchConversations(query: string): Promise<Conversation[]
   return apiClient.get(`/v1/conversations/search/${query}`)
 }
 
-export async function sendChatMessage(message: string, conversationId?: number, fileSources?: string[]): Promise<ChatResponse> {
-  return apiClient.post('/v1/chat', { message, conversation_id: conversationId, file_sources: fileSources })
+export async function sendChatMessage(
+  message: string,
+  conversationId?: number,
+  fileSources?: string[],
+  latitude?: number,
+  longitude?: number,
+): Promise<ChatResponse> {
+  return apiClient.post('/v1/chat', {
+    message,
+    conversation_id: conversationId,
+    file_sources: fileSources,
+    latitude,
+    longitude,
+  })
 }
 
 export async function resetConversation(conversationId: number): Promise<any> {

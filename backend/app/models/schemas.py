@@ -50,6 +50,8 @@ class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[int] = None
     file_sources: Optional[list[str]] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class Source(BaseModel):

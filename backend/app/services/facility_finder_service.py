@@ -149,14 +149,29 @@ class FacilityFinderService:
             "search_queries": SPECIALTY_MAPPING[best_match]["search_queries"],
         }
 
-    def generate_maps_search_url(self, query: str, location: str) -> str:
+    def generate_maps_search_url(
+        self, query: str, location: str,
+        latitude: float | None = None, longitude: float | None = None,
+    ) -> str:
+        if latitude is not None and longitude is not None:
+            # Anchor the search to exact GPS coordinates
+            encoded = quote_plus(query)
+            return (
+                f"https://www.google.com/maps/search/{encoded}/@{latitude},{longitude},13z"
+            )
         search_term = f"{query} {location}".strip()
         encoded = quote_plus(search_term)
         return f"https://www.google.com/maps/search/?api=1&query={encoded}"
 
-    def generate_maps_directions_url(self, destination: str, location: str) -> str:
+    def generate_maps_directions_url(
+        self, destination: str, location: str,
+        latitude: float | None = None, longitude: float | None = None,
+    ) -> str:
         dest_term = f"{destination} {location}".strip()
         encoded = quote_plus(dest_term)
+        if latitude is not None and longitude is not None:
+            origin = f"{latitude},{longitude}"
+            return f"https://www.google.com/maps/dir/?api=1&origin={origin}&destination={encoded}"
         return f"https://www.google.com/maps/dir/?api=1&destination={encoded}"
 
     def scrape_google_facilities(self, query: str, location: str) -> list[dict]:
@@ -203,15 +218,18 @@ class FacilityFinderService:
         except Exception:
             return []
 
-    def _build_curated_facilities(self, health_issue: str, location: str) -> list[dict]:
+    def _build_curated_facilities(
+        self, health_issue: str, location: str,
+        latitude: float | None = None, longitude: float | None = None,
+    ) -> dict:
         specialty_info = self.map_health_issue_to_specialty(health_issue)
         primary_query = specialty_info["search_queries"][0]
-        search_url = self.generate_maps_search_url(primary_query, location)
+        search_url = self.generate_maps_search_url(primary_query, location, latitude, longitude)
         facilities = []
         for ft in specialty_info["facility_types"][:3]:
-            maps_search = self.generate_maps_search_url(f"{ft} {location}", location)
+            maps_search = self.generate_maps_search_url(f"{ft}", location, latitude, longitude)
             facilities.append({
-                "name": f"Search: {ft} in {location}",
+                "name": f"Search: {ft}{' in ' + location if location and location != 'nearby' else ' near you'}",
                 "rating": None,
                 "review_count": None,
                 "address": "",
@@ -227,7 +245,10 @@ class FacilityFinderService:
             "facilities": facilities,
         }
 
-    def find_facilities(self, health_issue: str, location: str) -> dict:
+    def find_facilities(
+        self, health_issue: str, location: str,
+        latitude: float | None = None, longitude: float | None = None,
+    ) -> dict:
         specialty_info = self.map_health_issue_to_specialty(health_issue)
         primary_query = specialty_info["search_queries"][0]
         scraped = self.scrape_google_facilities(primary_query, location)
@@ -236,15 +257,19 @@ class FacilityFinderService:
             top_facilities = scraped[:3]
             for f in top_facilities:
                 if not f.get("maps_url"):
-                    f["maps_url"] = self.generate_maps_directions_url(f["name"], location)
+                    f["maps_url"] = self.generate_maps_directions_url(
+                        f["name"], location, latitude, longitude
+                    )
                 f["specialty"] = specialty_info["specialty"]
             return {
                 "specialty": specialty_info["specialty"],
                 "facility_types": specialty_info["facility_types"],
-                "search_url": self.generate_maps_search_url(primary_query, location),
+                "search_url": self.generate_maps_search_url(
+                    primary_query, location, latitude, longitude
+                ),
                 "facilities": top_facilities,
             }
-        return self._build_curated_facilities(health_issue, location)
+        return self._build_curated_facilities(health_issue, location, latitude, longitude)
 
     def format_facilities_as_markdown(self, result: dict) -> str:
         specialty = result["specialty"].title()

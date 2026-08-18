@@ -40,10 +40,11 @@ MEDICAL RESPONSE GUIDELINES:
 HEALTHCARE FACILITY RECOMMENDATIONS:
 - When the user asks about finding a hospital, clinic, doctor, pharmacy, diagnostic lab, or any healthcare facility near their location, IMMEDIATELY use the FACILITY_FINDER tool by outputting a JSON block in the following exact format at the END of your response (after your conversational reply):
   ```facility_finder
-  {"health_issue": "<describe the user's condition or need>", "location": "<user's city, area, or location>"}
+  {"health_issue": "<describe the user's condition or need>", "location": "<user's city or area if they mentioned it, otherwise empty string>"}
   ```
-- CRITICAL: If the user says "near me", "around me", "nearby", or similar WITHOUT specifying a city, STILL trigger the facility_finder tool immediately with an EMPTY string for location: {"health_issue": "...", "location": ""}
-- DO NOT ask the user for their location before triggering the tool. Trigger it right away with whatever location info is available (even empty), and ALSO mention in your conversational reply that sharing their city will give more precise results.
+- ALWAYS trigger the facility_finder tool immediately — the user's device will automatically share their GPS location if they allow it. Do NOT wait to ask for a city first.
+- If the user mentioned a specific city or area (e.g. "Chennai", "Bangalore"), include it in the location field. If they said "near me" or "around me" without a city, leave location as an empty string — the system will use their GPS.
+- In your conversational reply, mention that precise results require sharing their location (if browser permission is needed).
 - Detect facility-finding intent from phrases like: "where can I find", "hospital near me", "clinic near me", "pharmacy near me", "doctor near me", "find a hospital", "nearest hospital", "where to go for", "lab test near me", "diagnostic center near me", "24/7 pharmacy", "emergency room near me", "best hospital for", "nearest", "around me", "closest"
 - For life-threatening emergencies, provide emergency helpline numbers (112 / 108 / 911) BEFORE any facility recommendations"""
 

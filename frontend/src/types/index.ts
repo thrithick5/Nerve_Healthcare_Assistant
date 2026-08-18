@@ -32,6 +32,8 @@ export interface ChatMessage {
 export interface ChatRequest {
   message: string
   conversation_id?: number
+  latitude?: number
+  longitude?: number
 }
 
 export interface ChatResponse {

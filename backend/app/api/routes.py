@@ -392,14 +392,18 @@ async def chat(
             facility_params = json.loads(raw_json)
             health_issue = facility_params.get("health_issue", "").strip()
             location = facility_params.get("location", "").strip()
-            # If the LLM didn't fill in location yet, use a generic fallback
-            # so we still generate a Maps search link the user can refine
-            if not location:
-                location = "nearby"
+            # Use GPS coordinates from the request if available (user granted location permission)
+            req_lat = request.latitude
+            req_lng = request.longitude
+            # If no GPS and no city text, use empty string (Maps will show generic results)
+            if not location and req_lat is None:
+                location = ""
             if health_issue:
                 ff = FacilityFinderService()
                 try:
-                    facility_result = ff.find_facilities(health_issue, location)
+                    facility_result = ff.find_facilities(
+                        health_issue, location, latitude=req_lat, longitude=req_lng
+                    )
                     facility_md = ff.format_facilities_as_markdown(facility_result)
                     facility_data = {
                         "specialty": facility_result["specialty"],
