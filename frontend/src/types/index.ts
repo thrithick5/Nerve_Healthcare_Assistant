@@ -62,6 +62,12 @@ export interface Facility {
   source: string
   specialty?: string
   facility_type?: string
+  latitude?: number
+  longitude?: number
+  distance_km?: number
+  phone?: string
+  opening_hours?: string
+  emergency?: boolean
 }
 
 export interface FacilityData {
@@ -69,6 +75,9 @@ export interface FacilityData {
   facility_types: string[]
   search_url: string
   facilities: Facility[]
+  latitude?: number
+  longitude?: number
+  resolved_location?: boolean
 }
 
 export interface Conversation {

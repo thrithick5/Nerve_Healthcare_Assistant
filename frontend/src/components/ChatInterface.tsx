@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 import { FormattedMarkdown } from './FormattedMarkdown'
+import { FacilityRecommendations } from './FacilityRecommendations'
 import { isUploadedFileSource } from '../utils/helpers'
 
 interface PendingFile {
@@ -40,6 +41,37 @@ export function ChatInterface({
   const dark = resolvedTheme === 'dark'
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasFiles = pendingFiles.length > 0
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
+
+  const toggleVoice = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in this browser. Please try Chrome or Edge.')
+      return
+    }
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-US'
+    recognition.interimResults = true
+    recognition.continuous = false
+    recognition.onresult = (event: any) => {
+      let transcript = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setInput((prev) => (prev ? prev + ' ' : '') + transcript.trim())
+    }
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+    recognition.start()
+    recognitionRef.current = recognition
+    setIsListening(true)
+  }, [isListening])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -165,6 +197,9 @@ export function ChatInterface({
                   ) : (
                     <>
                       <FormattedMarkdown content={msg.content} dark={dark} />
+                      {msg.facility_data && (
+                        <FacilityRecommendations facilityData={msg.facility_data} dark={dark} />
+                      )}
                       {(() => {
                         const displaySources = msg.sources?.filter(s => !isUploadedFileSource(s)) ?? []
                         return displaySources.length > 0 ? (
@@ -270,6 +305,21 @@ export function ChatInterface({
               onChange={handleFileUpload}
               className="hidden"
             />
+            <button
+              type="button"
+              onClick={toggleVoice}
+              title={isListening ? 'Stop listening' : 'Speak your symptoms'}
+              className={`p-2.5 transition-colors rounded-xl ${
+                isListening
+                  ? 'text-white bg-red-500 hover:bg-red-600 animate-pulse'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-gray-200 dark:hover:bg-[#383838]'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="9" y="2" width="6" height="12" rx="3" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 10a7 7 0 01-14 0m7 7v4m-4 0h8" />
+              </svg>
+            </button>
             <textarea
               ref={inputRef}
               value={input}

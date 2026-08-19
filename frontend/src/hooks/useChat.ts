@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import type { ChatMessage, ChatResponse } from '../types'
-import { sendChatMessage, resetConversation as apiResetConversation } from '../services/api'
+import { sendChatMessage, resetConversation as apiResetConversation, getBrowserLocation } from '../services/api'
 
 interface UseChatReturn {
   messages: ChatMessage[]
@@ -34,9 +34,24 @@ export function useChat(): UseChatReturn {
     abortControllerRef.current = abortController
 
     try {
+      let latitude: number | undefined
+      let longitude: number | undefined
+      try {
+        const coords = await getBrowserLocation()
+        if (coords) {
+          latitude = coords.latitude
+          longitude = coords.longitude
+        }
+      } catch {
+        // geolocation is optional — continue without it
+      }
+
       const response: ChatResponse = await sendChatMessage(
         text.trim(),
         conversationId ?? undefined,
+        undefined,
+        latitude,
+        longitude,
       )
 
       const assistantMsg: ChatMessage = {

@@ -12,7 +12,7 @@ const API_BASE_URL = getApiBaseUrl()
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000,
+  timeout: 180000,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -117,8 +117,32 @@ export async function uploadFile(file: File, filename: string): Promise<any> {
   })
 }
 
-export async function findFacilities(healthIssue: string, location: string): Promise<FacilityData & { formatted_markdown: string }> {
-  return apiClient.post('/v1/find-facilities', { health_issue: healthIssue, location })
+export async function findFacilities(
+  healthIssue: string,
+  location: string,
+  latitude?: number,
+  longitude?: number,
+): Promise<FacilityData & { formatted_markdown: string }> {
+  return apiClient.post('/v1/find-facilities', {
+    health_issue: healthIssue,
+    location,
+    latitude,
+    longitude,
+  })
+}
+
+export function getBrowserLocation(): Promise<{ latitude: number; longitude: number } | null> {
+  return new Promise((resolve) => {
+    if (!('geolocation' in navigator)) {
+      resolve(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 300000 },
+    )
+  })
 }
 
 export default apiClient

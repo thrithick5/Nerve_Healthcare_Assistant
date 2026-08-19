@@ -354,17 +354,22 @@ async def chat(
             system_prompt += f"\n\nRelevant medical context:\n{context}"
 
     if settings.ENABLE_SCRAPER:
-        try:
-            from app.services.scraper.medical_scraper import MedicalScraper
-            scraper = MedicalScraper()
+        _msg_lower = request.message.lower()
+        _drug_keywords = ["medicine", "medication", "drug", "dosage", "dose", "side effect",
+                          "tablet", "syrup", "pill", "cough syrup", "paracetamol", "antibiotic",
+                          "painkiller", "injection", "ointment", "what is", "uses of"]
+        if any(kw in _msg_lower for kw in _drug_keywords):
             try:
-                scraper_sources = scraper.get_structured_info(request.message)
-                if scraper_sources:
-                    sources.extend(scraper_sources)
-            finally:
-                scraper.close()
-        except Exception:
-            pass
+                from app.services.scraper.medical_scraper import MedicalScraper
+                scraper = MedicalScraper()
+                try:
+                    scraper_sources = scraper.get_structured_info(request.message)
+                    if scraper_sources:
+                        sources.extend(scraper_sources)
+                finally:
+                    scraper.close()
+            except Exception:
+                pass
 
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(history)
@@ -409,6 +414,9 @@ async def chat(
                         "facility_types": facility_result["facility_types"],
                         "search_url": facility_result["search_url"],
                         "facilities": facility_result["facilities"],
+                        "latitude": facility_result.get("latitude"),
+                        "longitude": facility_result.get("longitude"),
+                        "resolved_location": facility_result.get("resolved_location", False),
                     }
                     reply = re.sub(
                         r"```\s*facility_finder\s*\n?\s*\{.*?\}\s*\n?\s*```",
@@ -443,6 +451,9 @@ async def chat(
                         "facility_types": facility_result["facility_types"],
                         "search_url": facility_result["search_url"],
                         "facilities": facility_result["facilities"],
+                        "latitude": facility_result.get("latitude"),
+                        "longitude": facility_result.get("longitude"),
+                        "resolved_location": facility_result.get("resolved_location", False),
                     }
                     reply = f"{reply}\n\n{facility_md}" if reply else facility_md
                 finally:
@@ -544,7 +555,13 @@ async def find_facilities(
     if not token:
         raise HTTPException(status_code=401, detail="No token provided")
 
-    result = facility_finder.find_facilities(request.health_issue, request.location)
+    result = facility_finder.find_facilities(
+        request.health_issue,
+        request.location,
+        latitude=request.latitude,
+        longitude=request.longitude,
+        include_ratings=True,
+    )
     formatted_md = facility_finder.format_facilities_as_markdown(result)
     facilities = [FacilityItem(**f) for f in result["facilities"]]
     return FacilityResponse(
@@ -553,4 +570,7 @@ async def find_facilities(
         search_url=result["search_url"],
         facilities=facilities,
         formatted_markdown=formatted_md,
+        latitude=result.get("latitude"),
+        longitude=result.get("longitude"),
+        resolved_location=result.get("resolved_location", False),
     )

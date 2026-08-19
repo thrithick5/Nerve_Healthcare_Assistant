@@ -122,7 +122,9 @@ class SearchRequest(BaseModel):
 
 class FacilityRequest(BaseModel):
     health_issue: str
-    location: str
+    location: str = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class FacilityItem(BaseModel):
@@ -134,6 +136,12 @@ class FacilityItem(BaseModel):
     source: str = "google_search"
     specialty: Optional[str] = None
     facility_type: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    distance_km: Optional[float] = None
+    phone: Optional[str] = None
+    opening_hours: Optional[str] = None
+    emergency: Optional[bool] = None
 
 
 class FacilityResponse(BaseModel):
@@ -142,3 +150,6 @@ class FacilityResponse(BaseModel):
     search_url: str
     facilities: list[FacilityItem]
     formatted_markdown: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    resolved_location: bool = False
