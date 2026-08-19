@@ -6,6 +6,15 @@
 import logging
 import os
 
+os.environ["ANONYMOUS_TELEMETRY"] = "False"
+os.environ["CHROMA_TELEMETRY_IMPL"] = ""
+
+try:
+    import chromadb.telemetry.product.posthog as _chroma_posthog
+    _chroma_posthog.Posthog.capture = lambda self, event: None
+except Exception:
+    pass
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
