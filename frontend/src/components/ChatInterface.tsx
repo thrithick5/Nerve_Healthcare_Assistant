@@ -43,6 +43,7 @@ export function ChatInterface({
   const hasFiles = pendingFiles.length > 0
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
+  const voiceBaseRef = useRef<string>('')
 
   const toggleVoice = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -59,12 +60,16 @@ export function ChatInterface({
     recognition.lang = 'en-US'
     recognition.interimResults = true
     recognition.continuous = false
+    // Capture the existing text before voice starts so we can replace
+    // interim results without duplicating words on each onresult event.
+    voiceBaseRef.current = inputRef.current?.value ?? ''
     recognition.onresult = (event: any) => {
       let transcript = ''
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript
       }
-      setInput((prev) => (prev ? prev + ' ' : '') + transcript.trim())
+      const base = voiceBaseRef.current
+      setInput((base ? base + ' ' : '') + transcript.trim())
     }
     recognition.onend = () => setIsListening(false)
     recognition.onerror = () => setIsListening(false)
@@ -198,7 +203,7 @@ export function ChatInterface({
                     <>
                       <FormattedMarkdown content={msg.content} dark={dark} />
                       {msg.facility_data && (
-                        <FacilityRecommendations facilityData={msg.facility_data} dark={dark} />
+                        <FacilityRecommendations facilityData={msg.facility_data} />
                       )}
                       {(() => {
                         const displaySources = msg.sources?.filter(s => !isUploadedFileSource(s)) ?? []

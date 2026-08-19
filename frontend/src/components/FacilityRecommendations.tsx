@@ -1,26 +1,13 @@
-import { useState } from 'react'
-import type { Facility, FacilityData } from '../types'
+import type { FacilityData } from '../types'
 import { FacilityCard } from './FacilityCard'
-import { HospitalMap } from './HospitalMap'
-import { EncounterSummary } from './EncounterSummary'
 
 interface FacilityRecommendationsProps {
   facilityData: FacilityData
-  userLat?: number
-  userLng?: number
-  dark?: boolean
 }
 
-export function FacilityRecommendations({ facilityData, userLat, userLng, dark }: FacilityRecommendationsProps) {
+export function FacilityRecommendations({ facilityData }: FacilityRecommendationsProps) {
   const { specialty, facilities, search_url } = facilityData
-  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null)
-
   if (!facilities || facilities.length === 0) return null
-
-  const hasCoords = facilities.some((f) => f.latitude !== undefined && f.longitude !== undefined)
-  const userCoordsKnown = userLat !== undefined && userLng !== undefined
-  const mapUserLat = userLat ?? facilityData.latitude
-  const mapUserLng = userLng ?? facilityData.longitude
 
   return (
     <div className="mt-3 border border-gray-200 dark:border-[#383838] rounded-2xl overflow-hidden bg-gray-50 dark:bg-[#1a1a1a]">
@@ -35,51 +22,11 @@ export function FacilityRecommendations({ facilityData, userLat, userLng, dark }
           </h3>
         </div>
       </div>
-
-      <div className="p-3 space-y-3">
-        <EncounterSummary specialty={specialty} dark={dark} />
-
-        {hasCoords && (
-          <HospitalMap
-            facilities={facilities}
-            userLat={mapUserLat}
-            userLng={mapUserLng}
-            selectedFacility={selectedFacility}
-            onFacilitySelect={setSelectedFacility}
-            dark={dark}
-          />
-        )}
-
-        {!hasCoords && (
-          <div className={`flex items-start gap-2 p-3 rounded-xl text-sm border ${dark ? 'border-[#383838] bg-[#1e1e1e]' : 'border-gray-200 bg-white'}`}>
-            <svg className="w-4 h-4 shrink-0 mt-0.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <div>
-              <p className={dark ? 'text-neutral-300' : 'text-gray-700'}>
-                {userCoordsKnown ? 'Select a facility below to view it on the map.' : 'Enable location access for a map of nearby facilities.'}
-              </p>
-              <p className={`mt-0.5 text-xs ${dark ? 'text-neutral-500' : 'text-gray-500'}`}>
-                Open the Google Maps link under any facility for turn-by-turn directions.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {facilities.map((facility, index) => (
-            <FacilityCard
-              key={index}
-              facility={facility}
-              index={index + 1}
-              onSelect={hasCoords ? () => setSelectedFacility(facility) : undefined}
-              selected={selectedFacility?.name === facility.name}
-            />
-          ))}
-        </div>
+      <div className="p-3 space-y-2">
+        {facilities.map((facility, index) => (
+          <FacilityCard key={index} facility={facility} index={index + 1} />
+        ))}
       </div>
-
       {search_url && (
         <div className="px-4 pb-3">
           <a
