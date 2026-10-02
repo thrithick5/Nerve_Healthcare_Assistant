@@ -18,4 +18,6 @@ RUN mkdir -p /app/data
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Migrations are best-effort: an unreachable database must not stop the API
+# from booting (pool_pre_ping reconnects once the database is reachable).
+CMD ["sh", "-c", "python scripts/run_migrations.py; exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -30,7 +30,11 @@ settings = get_settings()
 
 os.makedirs("data", exist_ok=True)
 
-init_db()
+if not init_db():
+    logger.warning(
+        "Starting without a verified database schema. Endpoints that need the "
+        "database will recover automatically once it becomes reachable."
+    )
 
 app = FastAPI(
     title=settings.APP_NAME,

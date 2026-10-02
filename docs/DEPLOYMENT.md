@@ -17,7 +17,7 @@ Use the **Web Service** option on Render to deploy completely free without provi
    - **Name**: `nerve-healthcare-backend` (or any name you choose)
    - **Language**: `Docker`
    - **Branch**: `main`
-   - **Region**: Choose the closest location (e.g., Singapore or Oregon)
+   - **Region**: **Must match the PostgreSQL database's region** (see the warning below)
    - **Root Directory**: Leave blank (or `./`)
    - **Dockerfile Path**: `./backend/Dockerfile`
    - **Docker Context**: `./backend`
@@ -25,7 +25,6 @@ Use the **Web Service** option on Render to deploy completely free without provi
 5. Expand **Advanced Settings**:
    - **Health Check Path**: `/api/v1/health`
 6. Under **Environment Variables**, add the following key-value pairs:
-   - `DATABASE_URL` = `sqlite:///./data/healthcare.db`
    - `CHROMA_PERSIST_DIR` = `/app/data/chroma_db`
    - `COLLECTION_NAME` = `medical_knowledge`
    - `MISTRAL_MODEL` = `mistral-large-latest`
@@ -37,6 +36,36 @@ Use the **Web Service** option on Render to deploy completely free without provi
    - `CORS_ORIGINS_EXTRA` = `https://your-vercel-app-name.vercel.app` (Add after deploying on Vercel)
 
 7. Click **Create Web Service**. Render will start building the Docker container and deploy your backend.
+
+> **Do not set `DATABASE_URL` manually.** The app defaults to local SQLite. Set it
+> only if you want PostgreSQL — see the section below for the region requirement.
+
+### Using PostgreSQL instead of SQLite
+
+To use a Render PostgreSQL database, set `DATABASE_URL` to its connection string.
+
+**The web service and the database must be in the same region.** Render provides
+each database with an *internal* URL whose hostname only resolves from services in
+the **same workspace and region**. If the regions differ, startup fails with:
+
+```
+psycopg2.OperationalError: could not translate host name "dpg-..." to address
+```
+
+Fix it by moving one of the two resources to the other's region in the Render
+dashboard, or by using the database's **external** URL (add `?sslmode=require`).
+
+The container already handles this failure gracefully: `scripts/run_migrations.py`
+retries with backoff, then starts the API anyway, so a database outage no longer
+takes the whole service down. Requests recover automatically once the database
+is reachable.
+
+Check which host you are using:
+
+```bash
+# Internal (only works same region): dpg-xxxx-a
+# External (works anywhere):        dpg-xxxx
+```
 8. Once deployed, copy your Render backend URL (e.g., `https://nerve-healthcare-backend.onrender.com`).
 
 ---

@@ -69,23 +69,19 @@ mkdir -p "$SCRIPT_DIR/backend/data"
 echo "[SETUP] Running database migrations..."
 cd "$SCRIPT_DIR/backend"
 source venv/bin/activate
-MIGRATION_OUT=$(DATABASE_URL="${DATABASE_URL:-sqlite:///./data/healthcare.db}" alembic upgrade head 2>&1)
-MIGRATION_STATUS=$?
-if [ $MIGRATION_STATUS -eq 0 ]; then
-    echo "[OK] Database migrations completed"
-else
-    if echo "$MIGRATION_OUT" | grep -q "already exists"; then
-        echo "[INFO] Database tables exist without Alembic history. Stamping to head revision..."
-        if DATABASE_URL="${DATABASE_URL:-sqlite:///./data/healthcare.db}" alembic stamp head >/dev/null 2>&1; then
-            echo "[OK] Database schema stamped to head revision successfully"
-        else
-            echo "[WARN] Could not stamp database revision"
-        fi
+
+# Retries with backoff, then always exits 0 so a database outage cannot block
+# startup. Kept in a subshell to avoid leaking the default DATABASE_URL.
+# See backend/scripts/run_migrations.py.
+(
+    export DATABASE_URL="${DATABASE_URL:-sqlite:///./data/healthcare.db}"
+    python scripts/run_migrations.py
+    if alembic current >/dev/null 2>&1; then
+        echo "[OK] Database migrations completed"
     else
-        echo "$MIGRATION_OUT"
-        echo "[WARN] Migration command reported a problem; continuing with the existing database state"
+        echo "[WARN] Alembic reports no current revision; continuing"
     fi
-fi
+)
 cd "$SCRIPT_DIR"
 
 if [ ! -d "$SCRIPT_DIR/backend/data/chroma_db" ]; then

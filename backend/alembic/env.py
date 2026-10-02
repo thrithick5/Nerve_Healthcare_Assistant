@@ -9,16 +9,17 @@ from sqlalchemy import pool
 from alembic import context
 from app.database.connection import Base
 from app.database import models
+from app.database.url_utils import DEFAULT_DATABASE_URL, normalize_database_url
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-db_url = os.getenv("DATABASE_URL", "sqlite:///./data/healthcare.db")
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-config.set_main_option("sqlalchemy.url", db_url)
+db_url = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
+# Percent signs are ConfigParser interpolation syntax; escape them so
+# URL-encoded credentials (common on Render) are not corrupted.
+config.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 

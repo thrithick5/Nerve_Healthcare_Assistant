@@ -1,8 +1,13 @@
+# IMPORTANT: the web service and the database MUST share the same region.
+# Render injects the database's *internal* URL via fromDatabase.connectionString,
+# and internal hostnames only resolve within one workspace + region. A region
+# mismatch causes: "could not translate host name ... to address".
 databases:
   - name: nerve-healthcare-db
     plan: free
     databaseName: nerve_healthcare
     user: nerve
+    region: singapore
 
 services:
   - type: web
@@ -10,6 +15,7 @@ services:
     env: docker
     repo: https://github.com/thrithick5/Nerve_Healthcare_Assistant
     branch: main
+    region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /api/v1/health
