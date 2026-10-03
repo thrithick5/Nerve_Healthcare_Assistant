@@ -23,10 +23,11 @@ from app.services.auth_service import (
 from app.services.chat_history_service import ChatHistoryService
 from app.core.config import Settings
 from app.dependencies import get_settings, get_llm_service, get_ingestion_service, get_file_processor, get_facility_finder
-from app.database.connection import get_db
+from app.database.connection import check_database_reachable, get_db
 from app.database.models import ConversationFile
 from app.services.file_processor import FileProcessor
 from app.services.facility_finder_service import FacilityFinderService
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter()
 
@@ -512,7 +513,14 @@ async def reset_conversation(
 # ─── HEALTH / INGEST / STATS ──────────────────────────────────────────────
 @router.get("/health", response_model=HealthResponse)
 async def health_check(settings: Settings = Depends(get_settings)):
-    return HealthResponse(status="healthy", version=settings.APP_VERSION)
+    # Always report healthy so Render does not restart-loop the service while
+    # the database is down; the DB's real state is exposed in `database`.
+    reachable = await run_in_threadpool(check_database_reachable)
+    return HealthResponse(
+        status="healthy",
+        version=settings.APP_VERSION,
+        database="up" if reachable else "down",
+    )
 
 
 @router.post("/ingest", response_model=IngestResponse)

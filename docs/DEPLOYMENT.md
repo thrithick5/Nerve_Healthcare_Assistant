@@ -98,6 +98,50 @@ Check which host you are using:
 
 ## Troubleshooting & Tips
 
+### Login fails with "Network error. Please check your connection."
+
+This message is emitted by the browser-facing API client whenever a request
+completes with **no response object**. Historically a *server* fault produced it:
+when the database was unreachable, `/auth/login` raised an unhandled
+`OperationalError`. Starlette's `ServerErrorMiddleware` sits outside
+`CORSMiddleware` and answered with a bare `text/plain` 500 carrying **no
+`access-control-allow-origin` header**, so the browser discarded the response.
+
+Database outages now return `503` with a JSON `detail` and correct CORS headers,
+so the UI shows *"Database temporarily unavailable. Please try again in a moment."*
+instead of blaming the user's connection. Check `/api/v1/health` for the truth:
+
+```json
+{"status": "healthy", "version": "2.0.0", "database": "down"}
+```
+
+`status` deliberately stays `healthy` while the database is down: Render restarts
+any service whose health path stops returning 2xx, which would turn a database
+outage into a crash loop.
+
+### Diagnosing an unreachable database
+
+1. Check `database` in `/api/v1/health`.
+2. Read the host from the startup logs (passwords are redacted):
+   `ERROR [startup.migrations] database unreachable ... host 'dpg-XXXX-a'`.
+3. The `-a` suffix marks a **Render internal** hostname. It resolves only inside
+   the same Render workspace **and region**, never from the public internet, so
+   a public `nslookup` failing is expected and not proof of a fault.
+4. Check that the database and web service share a region, and that the
+   database has not been deleted. Free Postgres instances expire after 30 days.
+5. If the internal hostname no longer resolves publicly *and* the service is in
+   the database's region, the instance is gone — provision a new one.
+
+### Removing a manually-set `DATABASE_URL`
+
+If `DATABASE_URL` is set as a manual environment variable on the Render web
+service, it **overrides** the value that `fromDatabase.connectionString`
+injects. A stale manual value therefore survives a Blueprint re-apply and keeps
+pointing at a deleted database. Delete the manual variable so the Blueprint can
+inject the current internal URL, or set it to the new database's external URL
+with `?sslmode=require`.
+
 - **CORS Errors**: Vercel domain URLs (`https://*.vercel.app`) are automatically allowed by backend regex. If using a custom domain, add it to `CORS_ORIGINS_EXTRA` in Render.
 - **404 on Refresh**: `vercel.json` rewrites map all requests to `/index.html`.
+- **Blank page / API calls hitting Vercel**: `VITE_API_BASE_URL` is unset, so the client falls back to `/api` on the frontend origin, where the SPA rewrite returns `index.html` instead of JSON. Set it on Vercel to `https://<backend>.onrender.com/api`. A POST to such a path returns `405` from Vercel's static hosting.
 - **Render Free Tier Spin-Down**: Free instances on Render spin down after 15 minutes of inactivity. The first request after spin-down may take ~30 seconds to respond as the instance wakes up.

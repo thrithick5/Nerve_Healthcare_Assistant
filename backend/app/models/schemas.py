@@ -98,6 +98,10 @@ class ResetResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str
+    # "up" | "down". Kept out of `status` on purpose: Render restarts any
+    # service whose health path stops returning 2xx, which turns a database
+    # outage into a crash loop.
+    database: str = "unknown"
 
 
 class IngestResponse(BaseModel):

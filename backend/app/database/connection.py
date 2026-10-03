@@ -57,3 +57,18 @@ def init_db() -> bool:
             exc,
         )
         return False
+
+
+def check_database_reachable() -> bool:
+    """Cheap reachability probe for the health endpoint.
+
+    Kept synchronous and side-effect free; callers should run it in a worker
+    thread so a hanging database cannot stall the event loop.
+    """
+    try:
+        with engine.connect() as connection:
+            connection.exec_driver_sql("SELECT 1")
+        return True
+    except SQLAlchemyError as exc:
+        logger.warning("database health probe failed: %s", exc)
+        return False
