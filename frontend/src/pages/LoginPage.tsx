@@ -35,17 +35,17 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#212121]">
-      <div className="w-full max-w-sm px-8 py-10">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
+      <div className="w-full max-w-sm px-8 py-10 rounded-3xl bg-surface-elevated border border-border shadow-elevated animate-scale-in">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sign in</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">to continue to Nerve</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary">Sign in</h1>
+          <p className="mt-2 text-sm text-text-secondary">to continue to Nerve</p>
         </div>
 
         <div className="space-y-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-center">
+              <div className="p-3 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm text-center animate-fade-in">
                 {error}
               </div>
             )}
@@ -57,7 +57,7 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
                 required
-                className="w-full px-4 py-3 rounded-xl border text-sm bg-white dark:bg-[#212121] border-gray-200 dark:border-[#383838] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border text-sm bg-surface border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-shadow"
               />
 
               <input
@@ -66,23 +66,23 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 required
-                className="w-full px-4 py-3 rounded-xl border text-sm bg-white dark:bg-[#212121] border-gray-200 dark:border-[#383838] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border text-sm bg-surface border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-shadow"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
+              className="w-full py-3 rounded-xl text-sm font-semibold text-accent-foreground bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
           <div className="flex items-center gap-3 py-1">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-[#383838]" />
-            <span className="text-xs text-gray-400 dark:text-neutral-500">or continue with</span>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-[#383838]" />
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-text-tertiary">or continue with</span>
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           <GoogleSignInButton
@@ -91,9 +91,9 @@ export function LoginPage() {
           />
         </div>
 
-        <p className="text-center text-sm mt-8 text-gray-500 dark:text-neutral-400">
+        <p className="text-center text-sm mt-8 text-text-secondary">
           No account?{' '}
-          <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">Sign up</Link>
+          <Link to="/register" className="text-accent hover:underline font-medium">Sign up</Link>
         </p>
       </div>
     </div>

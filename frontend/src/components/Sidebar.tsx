@@ -87,7 +87,7 @@ export function Sidebar({
         className={`fixed lg:relative z-40 h-full flex flex-col ${
           isResizing ? '' : 'transition-[width] duration-300'
         } ${!isOpen ? 'overflow-hidden border-none' : ''} ${
-          dark ? 'bg-[#171717] border-r border-[#2f2f2f]' : 'bg-gray-50 border-r border-gray-200'
+          dark ? 'bg-surface border-r border-border' : 'bg-surface-secondary border-r border-border'
         }`}
       >
         {isOpen && (
@@ -96,11 +96,7 @@ export function Sidebar({
             <div className="flex items-center justify-between p-3 gap-2">
               <button
                 onClick={onNewChat}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full ${
-                  dark
-                    ? 'border border-[#383838] hover:bg-[#2f2f2f] text-neutral-100'
-                    : 'border border-gray-200 hover:bg-gray-100 text-gray-800'
-                }`}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full border border-border-subtle bg-surface-elevated text-text-primary shadow-subtle hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.995]"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -109,10 +105,9 @@ export function Sidebar({
               </button>
               <button
                 onClick={onToggle}
-                className={`p-2 rounded-xl transition-colors shrink-0 ${
-                  dark ? 'hover:bg-[#2f2f2f] text-neutral-400' : 'hover:bg-gray-200 text-gray-500'
-                }`}
+                className="p-2 rounded-xl transition-colors shrink-0 text-text-tertiary hover:text-text-secondary hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.995]"
                 title="Collapse sidebar"
+                aria-label="Collapse sidebar"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -127,11 +122,8 @@ export function Sidebar({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search conversations..."
-                className={`w-full px-3 py-2 rounded-xl text-sm ${
-                  dark
-                    ? 'bg-[#212121] border border-[#383838] text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none'
-                    : 'bg-white border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none'
-                }`}
+                className="w-full px-3 py-2 rounded-xl text-sm bg-surface border border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-shadow"
+                aria-label="Search conversations"
               />
             </div>
 
@@ -141,14 +133,10 @@ export function Sidebar({
                 <div
                   key={conv.id}
                   onClick={() => onSelect(conv.id)}
-                  className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-colors mb-0.5 ${
+                  className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-colors mb-0.5 animate-fade-in ${
                     activeId === conv.id
-                      ? dark
-                        ? 'bg-[#2f2f2f] text-white'
-                        : 'bg-gray-200 text-gray-900'
-                      : dark
-                      ? 'text-neutral-300 hover:bg-[#212121]'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? 'bg-surface-elevated text-text-primary shadow-subtle ring-1 ring-border-subtle'
+                      : 'text-text-secondary hover:bg-surface-secondary hover:text-text-primary'
                   }`}
                 >
                   <span className="truncate flex-1">{conv.title}</span>
@@ -157,7 +145,8 @@ export function Sidebar({
                       e.stopPropagation()
                       onDelete(conv.id)
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-danger/10 hover:text-danger text-text-tertiary transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.98]"
+                    aria-label="Delete conversation"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -173,14 +162,12 @@ export function Sidebar({
             </div>
 
             {/* Bottom section */}
-            <div className={`p-3 border-t ${dark ? 'border-[#2f2f2f]' : 'border-gray-200'}`}>
+            <div className="p-3 border-t border-border">
               {/* Theme Switcher */}
               <div className="relative mb-2">
                 <button
                   onClick={() => setShowThemeMenu(!showThemeMenu)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm w-full transition-colors ${
-                    dark ? 'hover:bg-[#2f2f2f] text-neutral-300' : 'hover:bg-gray-200 text-gray-600'
-                  }`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm w-full transition-colors text-text-secondary hover:text-text-primary hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.995]"
                 >
                   {resolvedTheme === 'dark' ? (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,11 +191,7 @@ export function Sidebar({
                   {theme.charAt(0).toUpperCase() + theme.slice(1)} Mode
                 </button>
                 {showThemeMenu && (
-                  <div
-                    className={`absolute bottom-full left-0 right-0 mb-1 rounded-xl shadow-lg overflow-hidden ${
-                      dark ? 'bg-[#212121] border border-[#383838]' : 'bg-white border border-gray-200'
-                    }`}
-                  >
+                  <div className="absolute bottom-full left-0 right-0 mb-1 rounded-xl shadow-elevated bg-surface-elevated border border-border overflow-hidden animate-scale-in">
                     {(['light', 'dark', 'system'] as Theme[]).map((t) => (
                       <button
                         key={t}
@@ -216,12 +199,10 @@ export function Sidebar({
                           setTheme(t)
                           setShowThemeMenu(false)
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-sm ${
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                           theme === t
-                            ? 'bg-blue-600 text-white'
-                            : dark
-                            ? 'text-neutral-300 hover:bg-[#2f2f2f]'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-text-primary hover:bg-surface-secondary'
                         }`}
                       >
                         {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -235,31 +216,23 @@ export function Sidebar({
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-colors ${
-                    dark ? 'hover:bg-[#2f2f2f] text-white' : 'hover:bg-gray-200 text-gray-800'
-                  }`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-colors text-text-primary hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.995]"
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-medium shadow-soft">
                     {user?.username?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div className="text-left flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{user?.full_name || user?.username || 'User'}</p>
-                    <p className={`text-xs truncate ${dark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                    <p className="text-xs truncate text-text-tertiary">
                       {user?.email}
                     </p>
                   </div>
                 </button>
                 {showUserMenu && (
-                  <div
-                    className={`absolute bottom-full left-0 right-0 mb-1 rounded-xl shadow-lg overflow-hidden ${
-                      dark ? 'bg-[#212121] border border-[#383838]' : 'bg-white border border-gray-200'
-                    }`}
-                  >
+                  <div className="absolute bottom-full left-0 right-0 mb-1 rounded-xl shadow-elevated bg-surface-elevated border border-border overflow-hidden animate-scale-in">
                     <button
                       onClick={onLogout}
-                      className={`w-full text-left px-4 py-2.5 text-sm ${
-                        dark ? 'text-red-400 hover:bg-[#2f2f2f]' : 'text-red-600 hover:bg-gray-100'
-                      }`}
+                      className="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-danger/10 transition-colors"
                     >
                       Sign Out
                     </button>

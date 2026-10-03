@@ -27,7 +27,7 @@ export function GoogleSignInButton({
       <button
         type="button"
         onClick={handleClick}
-        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-4 text-center text-xl font-semibold text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 dark:border-[#383838] dark:bg-white dark:text-gray-900 dark:hover:bg-gray-50"
+        className="w-full rounded-xl border border-border-subtle bg-surface px-4 py-3 text-center text-sm font-medium text-text-primary transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-bg shadow-subtle"
       >
         {label}
       </button>

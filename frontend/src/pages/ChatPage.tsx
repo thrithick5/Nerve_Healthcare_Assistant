@@ -193,7 +193,7 @@ export function ChatPage() {
   }, [activeConversationId, pendingFiles])
 
   return (
-    <div className={`flex h-screen ${resolvedTheme === 'dark' ? 'bg-[#212121]' : 'bg-white'}`}>
+    <div className="h-screen flex overflow-hidden bg-bg">
       <Sidebar
         conversations={conversations}
         activeId={activeConversationId}
@@ -208,18 +208,18 @@ export function ChatPage() {
         onLogout={logout}
         resolvedTheme={resolvedTheme}
       />
-        <ChatInterface
-          messages={messages}
-          isLoading={isLoading}
-          onSend={handleSendMessage}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          resolvedTheme={resolvedTheme}
-          hasConversation={activeConversationId !== null}
-          sidebarOpen={sidebarOpen}
-          onUploadFile={handleUploadFile}
-          pendingFiles={pendingFiles}
-          onRemoveFile={handleRemoveFile}
-        />
+      <ChatInterface
+        messages={messages}
+        isLoading={isLoading}
+        onSend={handleSendMessage}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        resolvedTheme={resolvedTheme}
+        hasConversation={!!activeConversationId}
+        sidebarOpen={sidebarOpen}
+        onUploadFile={handleUploadFile}
+        pendingFiles={pendingFiles}
+        onRemoveFile={handleRemoveFile}
+      />
     </div>
   )
 }
