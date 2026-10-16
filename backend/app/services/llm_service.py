@@ -79,6 +79,16 @@ class LLMService:
         # Primary model from settings, with free-tier fallback chain.
         # mistral-large requires a paid tier (403 tier_not_allowed, code 1910).
         # mistral-small-latest works on free/trial keys.
+        # Transient 429s (rate limit / out of capacity) are retried with
+        # backoff inside call_with_retry; quota is account-wide so an
+        # exhausted retry budget breaks out instead of trying more models.
+        from app.services.mistral_resilience import (
+            call_with_retry,
+            is_retryable_mistral_error,
+            is_tier_error,
+            user_facing_message,
+        )
+
         model_candidates = [self.settings.MISTRAL_MODEL]
         for fallback in ("mistral-small-latest", "open-mistral-7b"):
             if fallback not in model_candidates:
@@ -88,22 +98,23 @@ class LLMService:
         response = None
         for model_name in model_candidates:
             try:
-                response = self.client.chat.complete(
-                    model=model_name,
-                    messages=messages,
-                    max_tokens=self.settings.MAX_TOKENS,
-                    temperature=self.settings.TEMPERATURE,
+                response = call_with_retry(
+                    lambda m=model_name: self.client.chat.complete(
+                        model=m,
+                        messages=messages,
+                        max_tokens=self.settings.MAX_TOKENS,
+                        temperature=self.settings.TEMPERATURE,
+                    ),
+                    what=f"mistral chat ({model_name})",
                 )
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - must classify any SDK error
                 last_err = e
-                msg = str(e)
-                # Only fall through on tier/quota errors; anything else re-raises below.
-                if "tier_not_allowed" in msg or "403" in msg or "1910" in msg:
-                    continue
-                raise
-        if response is None and last_err is not None:
-            raise last_err
+                if is_tier_error(e):
+                    continue  # try next model
+                break  # retried-out transient or fatal: no other model will help
+        if response is None:
+            raise RuntimeError(user_facing_message(last_err) if last_err else "AI service unavailable.")
 
         reply = response.choices[0].message.content.strip()
         # Clean inline double-pipes separating table rows

@@ -38,7 +38,9 @@ apiClient.interceptors.response.use(
       throw new Error(error.response.data?.detail || error.message)
     }
     if (error.request) {
-      throw new Error('Network error. Please check your connection.')
+      throw new Error(
+        'Network error. The server may be waking up (free tier can take ~50s) or your connection dropped. Please retry.'
+      )
     }
     throw error
   },

@@ -15,6 +15,7 @@ interface ChatInterfaceProps {
   messages: ChatMessage[]
   isLoading: boolean
   onSend: (message: string) => Promise<void>
+  onRetry: () => void
   onToggleSidebar: () => void
   resolvedTheme: 'light' | 'dark'
   hasConversation: boolean
@@ -22,6 +23,36 @@ interface ChatInterfaceProps {
   onUploadFile: (files: FileList) => void
   pendingFiles: PendingFile[]
   onRemoveFile: (fileId: string) => void
+}
+
+type ErrorKind = 'tier' | 'busy' | 'network' | 'generic'
+
+function classifyError(content: string): ErrorKind {
+  if (/tier_not_allowed|not available on the.*plan|MISTRAL_MODEL/i.test(content)) return 'tier'
+  if (/rate.?limit|capacity|overloaded|busy right now|30 seconds|status 429|raw_status_code|code.{0,5}(1300|3505)|\b503\b/i.test(content)) return 'busy'
+  if (/network error|check your connection|failed to fetch|load failed|waking up/i.test(content)) return 'network'
+  return 'generic'
+}
+
+function cleanErrorContent(content: string, kind: ErrorKind): string {
+  // Never show raw SDK/JSON payloads (e.g. {"object":"error",...}) in the UI.
+  if (/"object"\s*:\s*"error"|raw_status_code|tier_not_allowed/i.test(content)) {
+    if (kind === 'tier') return 'The configured AI model is not available on the current plan.'
+    if (kind === 'busy') return 'The AI service is busy right now (rate limit / capacity).'
+    return 'The AI service returned an error.'
+  }
+  return content
+}
+
+const ERROR_HINT: Record<ErrorKind, string> = {
+  tier: 'Admin: set MISTRAL_MODEL to mistral-small-latest on Render and redeploy.',
+  busy: 'Please wait about 30 seconds, then hit Retry.',
+  network: 'The free-tier server may be waking up (can take ~50s) or your connection dropped. Hit Retry.',
+  generic: 'Please try again.',
+}
+
+function isErrorMessage(content: string): boolean {
+  return /encountered an error|model unavailable|AI service error|rate.?limit|capacity|busy right now|network error|check your connection|failed to fetch|waking up|unexpected error/i.test(content)
 }
 
 const SUGGESTIONS = [
@@ -47,6 +78,7 @@ export function ChatInterface({
   messages,
   isLoading,
   onSend,
+  onRetry,
   onToggleSidebar,
   resolvedTheme,
   sidebarOpen,
@@ -195,7 +227,8 @@ export function ChatInterface({
         ) : (
           <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
             {messages.map((msg) => {
-              const isError = msg.role === 'assistant' && /encountered an error|model unavailable|AI service error/i.test(msg.content)
+              const isError = msg.role === 'assistant' && isErrorMessage(msg.content)
+              const errorKind: ErrorKind = isError ? classifyError(msg.content) : 'generic'
               if (msg.role === 'user') {
                 return (
                   <div key={msg.id} className="flex justify-end animate-fade-in-up">
@@ -233,10 +266,18 @@ export function ChatInterface({
                     {isError ? (
                       <div className="rounded-2xl border border-danger/25 bg-danger/10 px-4 sm:px-5 py-4" role="alert">
                         <p className="text-sm font-medium text-text-primary mb-1">Something went wrong</p>
-                        <p className="text-sm text-text-secondary leading-relaxed">{msg.content}</p>
-                        <p className="text-xs text-text-tertiary mt-2">
-                          If this mentions the model or plan, update MISTRAL_MODEL to mistral-small-latest on Render and redeploy.
-                        </p>
+                        <p className="text-sm text-text-secondary leading-relaxed">{cleanErrorContent(msg.content, errorKind)}</p>
+                        <p className="text-xs text-text-tertiary mt-2">{ERROR_HINT[errorKind]}</p>
+                        <button
+                          onClick={onRetry}
+                          disabled={isLoading}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-medium bg-surface-elevated border border-border text-text-primary shadow-subtle transition-all hover:border-accent/50 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3m2 7a8 8 0 01-14 3" />
+                          </svg>
+                          Retry
+                        </button>
                       </div>
                     ) : (
                       <div className="text-[15px] leading-relaxed text-text-primary min-w-0">

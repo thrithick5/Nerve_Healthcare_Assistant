@@ -376,6 +376,17 @@ async def chat(
     messages.extend(history)
 
     # Free-tier safe fallback: mistral-large needs paid tier (403 tier_not_allowed).
+    # Transient 429s (rate limit / out of capacity) are retried with backoff;
+    # quota is account-wide so an exhausted retry budget breaks out instead
+    # of pointlessly trying more models. Raw SDK payloads are never leaked
+    # to the client — only short user-facing messages.
+    from app.services.mistral_resilience import (
+        call_with_retry,
+        is_retryable_mistral_error,
+        is_tier_error,
+        user_facing_message,
+    )
+
     model_candidates = [settings.MISTRAL_MODEL]
     for fallback in ("mistral-small-latest", "open-mistral-7b"):
         if fallback not in model_candidates:
@@ -385,27 +396,27 @@ async def chat(
     last_err: Exception | None = None
     for model_name in model_candidates:
         try:
-            response = llm_service.client.chat.complete(
-                model=model_name,
-                messages=messages,
-                max_tokens=settings.MAX_TOKENS,
-                temperature=settings.TEMPERATURE,
+            response = call_with_retry(
+                lambda m=model_name: llm_service.client.chat.complete(
+                    model=m,
+                    messages=messages,
+                    max_tokens=settings.MAX_TOKENS,
+                    temperature=settings.TEMPERATURE,
+                ),
+                what=f"mistral chat ({model_name})",
             )
             break
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - must classify any SDK error
             last_err = e
-            msg = str(e)
-            if "tier_not_allowed" in msg or "403" in msg or "1910" in msg:
-                continue
-            raise HTTPException(status_code=502, detail=f"AI service error: {e}")
+            if is_tier_error(e):
+                continue  # try next model
+            break  # retried-out transient or fatal: no other model will help
     if response is None:
+        if last_err is not None and not is_tier_error(last_err) and not is_retryable_mistral_error(last_err):
+            raise HTTPException(status_code=502, detail=user_facing_message(last_err))
         raise HTTPException(
             status_code=503,
-            detail=(
-                "AI model unavailable on the current plan "
-                f"(tried {', '.join(model_candidates)}). "
-                "Set MISTRAL_MODEL to mistral-small-latest on Render and redeploy."
-            ),
+            detail=user_facing_message(last_err) if last_err else "AI service unavailable.",
         )
 
     reply = response.choices[0].message.content.strip()

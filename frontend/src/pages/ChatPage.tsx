@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Sidebar } from '../components/Sidebar'
 import { ChatInterface } from '../components/ChatInterface'
 import { useAuth } from '../context/AuthContext'
@@ -22,6 +22,7 @@ export function ChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
+  const lastMessageRef = useRef('')
 
   useEffect(() => {
     loadConversations()
@@ -121,6 +122,11 @@ export function ChatPage() {
 
     if (!message.trim() && !hasFiles) return
 
+    // Remember the last text prompt so the error-card Retry button can resend it.
+    if (message.trim()) {
+      lastMessageRef.current = message
+    }
+
     if (hasFiles) {
       setPendingFiles([])
     }
@@ -193,6 +199,12 @@ export function ChatPage() {
     }
   }, [activeConversationId, pendingFiles])
 
+  const handleRetry = useCallback(() => {
+    const last = lastMessageRef.current
+    if (!last.trim() || isLoading) return
+    handleSendMessage(last)
+  }, [handleSendMessage, isLoading])
+
   return (
     <div className="h-screen flex overflow-hidden bg-bg">
       <Sidebar
@@ -213,6 +225,7 @@ export function ChatPage() {
         messages={messages}
         isLoading={isLoading}
         onSend={handleSendMessage}
+        onRetry={handleRetry}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         resolvedTheme={resolvedTheme}
         hasConversation={!!activeConversationId}

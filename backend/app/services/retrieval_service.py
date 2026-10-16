@@ -39,7 +39,16 @@ class RetrievalService:
 
     def query(self, query_text: str, top_k: Optional[int] = None, min_score: float = 0.5) -> list[dict]:
         k = top_k or self.settings.TOP_K_RETRIEVAL
-        query_embedding = self.embedding_service.embed(query_text)
+        try:
+            query_embedding = self.embedding_service.embed(query_text)
+        except Exception as exc:  # noqa: BLE001 - RAG is best-effort
+            # Embeddings (429 capacity / rate limit / outage) must never fail
+            # the whole chat request: answer from the LLM without RAG context.
+            import logging
+            logging.getLogger(__name__).warning(
+                "RAG retrieval skipped, embeddings unavailable: %s", exc
+            )
+            return []
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=k * 2
