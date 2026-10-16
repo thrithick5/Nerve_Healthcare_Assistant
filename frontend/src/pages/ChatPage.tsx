@@ -179,11 +179,12 @@ export function ChatPage() {
       setMessages((prev) => [...prev, assistantMsg])
       setActiveConversationId(response.conversation_id)
       await loadConversations()
-    } catch (err) {
+    } catch (err: any) {
+      const detail = err?.message || 'Sorry, I encountered an error. Please try again.'
       const errorMsg: ChatMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: detail,
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, errorMsg])

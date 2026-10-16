@@ -29,7 +29,7 @@ services:
       - key: COLLECTION_NAME
         value: medical_knowledge
       - key: MISTRAL_MODEL
-        value: mistral-large-latest
+        value: mistral-small-latest
       - key: MISTRAL_EMBEDDING_MODEL
         value: mistral-embed
       - key: DEBUG

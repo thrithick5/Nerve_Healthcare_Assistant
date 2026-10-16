@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     MISTRAL_API_KEY: Optional[str] = None
-    MISTRAL_MODEL: str = "mistral-large-latest"
+    MISTRAL_MODEL: str = "mistral-small-latest"
     MISTRAL_EMBEDDING_MODEL: str = "mistral-embed"
 
     DATABASE_URL: str = "sqlite:///./data/healthcare.db"

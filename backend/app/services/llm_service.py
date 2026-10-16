@@ -76,12 +76,34 @@ class LLMService:
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(history)
 
-        response = self.client.chat.complete(
-            model=self.settings.MISTRAL_MODEL,
-            messages=messages,
-            max_tokens=self.settings.MAX_TOKENS,
-            temperature=self.settings.TEMPERATURE,
-        )
+        # Primary model from settings, with free-tier fallback chain.
+        # mistral-large requires a paid tier (403 tier_not_allowed, code 1910).
+        # mistral-small-latest works on free/trial keys.
+        model_candidates = [self.settings.MISTRAL_MODEL]
+        for fallback in ("mistral-small-latest", "open-mistral-7b"):
+            if fallback not in model_candidates:
+                model_candidates.append(fallback)
+
+        last_err: Exception | None = None
+        response = None
+        for model_name in model_candidates:
+            try:
+                response = self.client.chat.complete(
+                    model=model_name,
+                    messages=messages,
+                    max_tokens=self.settings.MAX_TOKENS,
+                    temperature=self.settings.TEMPERATURE,
+                )
+                break
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                # Only fall through on tier/quota errors; anything else re-raises below.
+                if "tier_not_allowed" in msg or "403" in msg or "1910" in msg:
+                    continue
+                raise
+        if response is None and last_err is not None:
+            raise last_err
 
         reply = response.choices[0].message.content.strip()
         # Clean inline double-pipes separating table rows

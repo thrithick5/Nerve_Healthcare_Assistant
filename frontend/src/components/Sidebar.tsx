@@ -73,7 +73,7 @@ export function Sidebar({
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const dark = resolvedTheme === 'dark'
+  void resolvedTheme
 
   return (
     <>
@@ -87,7 +87,7 @@ export function Sidebar({
         className={`fixed lg:relative z-40 h-full flex flex-col ${
           isResizing ? '' : 'transition-[width] duration-300'
         } ${!isOpen ? 'overflow-hidden border-none' : ''} ${
-          dark ? 'bg-surface border-r border-border' : 'bg-surface-secondary border-r border-border'
+          'bg-surface border-r border-border'
         }`}
       >
         {isOpen && (
@@ -248,7 +248,7 @@ export function Sidebar({
             className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-50 group/handle"
             title="Drag to resize sidebar"
           >
-            <div className={`w-0.5 h-full mx-auto transition-colors group-hover/handle:bg-blue-500/80 group-active/handle:bg-blue-600 ${isResizing ? 'bg-blue-500 w-1' : ''}`} />
+            <div className={`w-0.5 h-full mx-auto transition-colors group-hover/handle:bg-accent/70 group-active/handle:bg-accent ${isResizing ? 'bg-accent w-1' : ''}`} />
           </div>
         )}
       </aside>

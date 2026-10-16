@@ -375,12 +375,38 @@ async def chat(
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(history)
 
-    response = llm_service.client.chat.complete(
-        model=settings.MISTRAL_MODEL,
-        messages=messages,
-        max_tokens=settings.MAX_TOKENS,
-        temperature=settings.TEMPERATURE,
-    )
+    # Free-tier safe fallback: mistral-large needs paid tier (403 tier_not_allowed).
+    model_candidates = [settings.MISTRAL_MODEL]
+    for fallback in ("mistral-small-latest", "open-mistral-7b"):
+        if fallback not in model_candidates:
+            model_candidates.append(fallback)
+
+    response = None
+    last_err: Exception | None = None
+    for model_name in model_candidates:
+        try:
+            response = llm_service.client.chat.complete(
+                model=model_name,
+                messages=messages,
+                max_tokens=settings.MAX_TOKENS,
+                temperature=settings.TEMPERATURE,
+            )
+            break
+        except Exception as e:
+            last_err = e
+            msg = str(e)
+            if "tier_not_allowed" in msg or "403" in msg or "1910" in msg:
+                continue
+            raise HTTPException(status_code=502, detail=f"AI service error: {e}")
+    if response is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "AI model unavailable on the current plan "
+                f"(tried {', '.join(model_candidates)}). "
+                "Set MISTRAL_MODEL to mistral-small-latest on Render and redeploy."
+            ),
+        )
 
     reply = response.choices[0].message.content.strip()
 

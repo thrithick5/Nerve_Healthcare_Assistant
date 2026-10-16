@@ -94,8 +94,8 @@ class LLMService:
     def __init__(self, mistral_api_key: str):
         self.api_key = mistral_api_key
         self.model = LLMModel(
-            id="mistral-large-latest",
-            model_name="mistral-large-latest",
+            id="mistral-small-latest",
+            model_name="mistral-small-latest",
             provider="mistral",
             max_tokens=1024,
             context_length=32768,

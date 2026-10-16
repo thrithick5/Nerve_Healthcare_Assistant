@@ -24,6 +24,25 @@ interface ChatInterfaceProps {
   onRemoveFile: (fileId: string) => void
 }
 
+const SUGGESTIONS = [
+  {
+    title: 'Symptoms guide',
+    prompt: 'What are the symptoms of diabetes?',
+  },
+  {
+    title: 'Manage condition',
+    prompt: 'How to manage high blood pressure?',
+  },
+  {
+    title: 'Nutrition advice',
+    prompt: 'What to eat for a sore throat?',
+  },
+  {
+    title: 'Find care',
+    prompt: 'Find a hospital near me',
+  },
+]
+
 export function ChatInterface({
   messages,
   isLoading,
@@ -60,8 +79,6 @@ export function ChatInterface({
     recognition.lang = 'en-US'
     recognition.interimResults = true
     recognition.continuous = false
-    // Capture the existing text before voice starts so we can replace
-    // interim results without duplicating words on each onresult event.
     voiceBaseRef.current = inputRef.current?.value ?? ''
     recognition.onresult = (event: any) => {
       let transcript = ''
@@ -116,66 +133,73 @@ export function ChatInterface({
     }
   }
 
-  return (
-    <div className={`flex-1 flex flex-col min-w-0 h-full ${dark ? 'bg-[#212121]' : 'bg-white'}`}>
-      <div className={`flex items-center gap-3 px-4 py-3 border-b ${dark ? 'border-[#2f2f2f] bg-[#212121]' : 'border-gray-200 bg-white'}`}>
+  const canSend = (input.trim() || hasFiles) && !isLoading
 
+  return (
+    <div className="flex-1 flex flex-col min-w-0 h-full bg-bg">
+      {/* Top bar — minimal, Claude-like */}
+      <header className="flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-border bg-bg/80 backdrop-blur supports-[backdrop-filter]:bg-bg/60 sticky top-0 z-10">
         {!sidebarOpen && (
           <button
             onClick={onToggleSidebar}
-            className={`p-2 rounded-xl transition-colors ${dark ? 'hover:bg-[#2f2f2f] text-neutral-400' : 'hover:bg-gray-100 text-gray-500'}`}
+            className="p-2 rounded-xl transition-colors text-text-tertiary hover:text-text-secondary hover:bg-surface-secondary active:scale-[0.98]"
             title="Open sidebar"
+            aria-label="Open sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         )}
-        <h2 className={`text-base font-semibold ${dark ? 'text-neutral-100' : 'text-gray-800'}`}>
-          Nerve Healthcare Assistant
-        </h2>
-      </div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center text-sm font-semibold shrink-0" aria-hidden="true">
+            N
+          </div>
+          <h2 className="text-[15px] font-semibold text-text-primary truncate">
+            Nerve
+          </h2>
+          <span className="hidden sm:inline text-xs text-text-tertiary truncate">
+            Healthcare Assistant
+          </span>
+        </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto scrollbar">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto scrollbar" role="log" aria-live="polite" aria-label="Conversation">
         {messages.length === 0 && !isLoading ? (
-          <div className="flex items-center justify-center h-full px-4">
-            <div className="text-center max-w-lg">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${dark ? 'bg-[#2f2f2f]' : 'bg-blue-50'}`}>
-                <svg className={`w-8 h-8 ${dark ? 'text-blue-400' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
+          <div className="flex items-center justify-center min-h-full px-4 py-10">
+            <div className="text-center max-w-2xl w-full animate-fade-in-up">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-accent/10 ring-1 ring-accent/25 shadow-subtle" aria-hidden="true">
+                <span className="text-2xl font-semibold text-accent">N</span>
               </div>
-              <h2 className={`text-2xl font-bold mb-2 ${dark ? 'text-white' : 'text-gray-800'}`}>Nerve Healthcare Assistant</h2>
-              <p className={`text-sm mb-6 ${dark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                Ask me about medical health. I answer using trusted medical knowledge.
+              <h2 className="text-3xl sm:text-4xl font-semibold mb-3 text-text-primary tracking-tight text-balance">
+                How can I help you today?
+              </h2>
+              <p className="text-sm sm:text-[15px] mb-8 text-text-secondary leading-relaxed max-w-md mx-auto">
+                Ask about symptoms, conditions, medications, or find care nearby. Answers use trusted medical knowledge.
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  'What are the symptoms of diabetes?',
-                  'How to manage high blood pressure?',
-                  'Is fasting safe for everyone?',
-                  'What to eat for a sore throat?',
-                ].map((example, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left max-w-xl mx-auto">
+                {SUGGESTIONS.map((s) => (
                   <button
-                    key={i}
-                    onClick={() => setInput(example)}
-                    className={`text-left px-4 py-3 text-sm rounded-xl border transition-colors ${dark ? 'border-[#383838] text-neutral-300 hover:border-neutral-500 hover:bg-[#2f2f2f]' : 'border-gray-200 text-gray-600 hover:border-blue-300 hover:bg-blue-50'}`}
+                    key={s.prompt}
+                    onClick={() => setInput(s.prompt)}
+                    className="group px-4 py-3.5 rounded-2xl border border-border bg-surface text-left transition-all hover:border-accent/40 hover:shadow-soft hover:-translate-y-px active:translate-y-0 active:scale-[0.995]"
                   >
-                    {example}
+                    <span className="block text-[13px] font-medium text-text-primary mb-0.5">{s.title}</span>
+                    <span className="block text-[13px] text-text-tertiary group-hover:text-text-secondary truncate">{s.prompt}</span>
                   </button>
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-5 py-3 ${msg.role === 'user' ? (dark ? 'bg-[#2f2f2f] text-neutral-100' : 'bg-gray-100 text-gray-900') : dark ? 'text-neutral-100' : 'text-gray-800'}`}
-                >
-                  {msg.role === 'user' ? (
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+            {messages.map((msg) => {
+              const isError = msg.role === 'assistant' && /encountered an error|model unavailable|AI service error/i.test(msg.content)
+              if (msg.role === 'user') {
+                return (
+                  <div key={msg.id} className="flex justify-end animate-fade-in-up">
+                    <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-br-md px-4 sm:px-5 py-3 bg-surface-secondary text-text-primary shadow-subtle">
                       {msg.files && msg.files.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {msg.files.map((f, i) => (
@@ -184,7 +208,7 @@ export function ChatInterface({
                                 key={i}
                                 src={f.url}
                                 alt={f.name}
-                                className="w-20 h-20 rounded-lg object-cover bg-black/10"
+                                className="w-20 h-20 rounded-xl object-cover bg-black/10"
                               />
                             ) : (
                               <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/10 text-xs">
@@ -197,20 +221,37 @@ export function ChatInterface({
                           ))}
                         </div>
                       )}
-                      {msg.content}
+                      <div className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</div>
                     </div>
-                  ) : (
-                    <>
-                      <FormattedMarkdown content={msg.content} dark={dark} />
-                      {msg.facility_data && (
-                        <FacilityRecommendations facilityData={msg.facility_data} />
-                      )}
-                      {(() => {
-                        const displaySources = msg.sources?.filter(s => !isUploadedFileSource(s)) ?? []
-                        return displaySources.length > 0 ? (
-                        <div className={`mt-3 pt-3 border-t ${dark ? 'border-[#383838]' : 'border-gray-200'}`}>
-                          <div className={`text-xs font-semibold mb-1.5 ${dark ? 'text-neutral-400' : 'text-gray-500'}`}>Sources:</div>
-                          <div className="space-y-1">
+                  </div>
+                )
+              }
+              // Assistant — plain, Claude-style (no bubble), with error card variant
+              return (
+                <div key={msg.id} className="flex justify-start animate-fade-in-up">
+                  <div className="w-full min-w-0">
+                    {isError ? (
+                      <div className="rounded-2xl border border-danger/25 bg-danger/10 px-4 sm:px-5 py-4" role="alert">
+                        <p className="text-sm font-medium text-text-primary mb-1">Something went wrong</p>
+                        <p className="text-sm text-text-secondary leading-relaxed">{msg.content}</p>
+                        <p className="text-xs text-text-tertiary mt-2">
+                          If this mentions the model or plan, update MISTRAL_MODEL to mistral-small-latest on Render and redeploy.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-[15px] leading-relaxed text-text-primary min-w-0">
+                        <FormattedMarkdown content={msg.content} dark={dark} />
+                      </div>
+                    )}
+                    {msg.facility_data && (
+                      <FacilityRecommendations facilityData={msg.facility_data} />
+                    )}
+                    {(() => {
+                      const displaySources = msg.sources?.filter(s => !isUploadedFileSource(s)) ?? []
+                      return displaySources.length > 0 ? (
+                        <div className="mt-3 pt-3 border-t border-border-subtle">
+                          <div className="text-xs font-medium mb-1.5 text-text-tertiary">Sources</div>
+                          <div className="flex flex-wrap gap-1.5">
                             {displaySources.map((src, i) => (
                               <div key={i} className="text-xs">
                                 {src.url ? (
@@ -218,34 +259,34 @@ export function ChatInterface({
                                     href={src.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`inline-flex items-center gap-1 hover:underline ${dark ? 'text-blue-400' : 'text-blue-600'}`}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-border bg-surface text-text-secondary hover:text-text-primary hover:border-accent/40 transition-colors"
                                   >
                                     <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                     </svg>
-                                    {src.title}
+                                    <span className="max-w-48 truncate">{src.title}</span>
                                   </a>
                                 ) : (
-                                  <span className={`${dark ? 'text-neutral-400' : 'text-gray-500'}`}>{src.title}</span>
+                                  <span className="inline-flex px-2.5 py-1.5 rounded-full border border-border text-text-tertiary">{src.title}</span>
                                 )}
                               </div>
                             ))}
                           </div>
                         </div>
-                      ) : null})()}
-                    </>
-                  )}
+                      ) : null
+                    })()}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             {isLoading && (
-              <div className="flex justify-start">
-                <div className={`px-5 py-3 ${dark ? '' : ''}`}>
+              <div className="flex justify-start" aria-label="Assistant is typing">
+                <div className="py-2 animate-fade-in">
                   <div className="flex items-center gap-1.5">
-                    <span className={`typing-dot ${dark ? 'bg-neutral-400' : 'bg-gray-500'}`} />
-                    <span className={`typing-dot ${dark ? 'bg-neutral-400' : 'bg-gray-500'}`} />
-                    <span className={`typing-dot ${dark ? 'bg-neutral-400' : 'bg-gray-500'}`} />
+                    <span className="typing-dot bg-text-tertiary" />
+                    <span className="typing-dot bg-text-tertiary" />
+                    <span className="typing-dot bg-text-tertiary" />
                   </div>
                 </div>
               </div>
@@ -255,33 +296,37 @@ export function ChatInterface({
         )}
       </div>
 
-      <div className="px-4 pb-4 pt-2">
+      {/* Composer — Claude-like pill */}
+      <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 bg-gradient-to-t from-bg via-bg to-transparent">
         <div className="max-w-3xl mx-auto">
           {hasFiles && (
-            <div className={`mb-3 p-3 rounded-xl border ${dark ? 'bg-[#2f2f2f] border-[#383838]' : 'bg-gray-50 border-gray-200'}`}>
-              <div className={`text-xs font-medium mb-2 ${dark ? 'text-neutral-300' : 'text-gray-600'}`}>
+            <div className="mb-2.5 p-3 rounded-2xl border border-border bg-surface shadow-subtle animate-scale-in">
+              <div className="text-xs font-medium mb-2 text-text-secondary">
                 {pendingFiles.length} file(s) — press Enter to send with your question
               </div>
               <div className="flex flex-wrap gap-2">
                 {pendingFiles.map((pf) => (
                   <div
                     key={pf.id}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${dark ? 'bg-[#383838]' : 'bg-gray-200'}`}
+                    className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-xl bg-surface-secondary border border-border-subtle"
                   >
                     {pf.type === 'image' && pf.preview && (
-                      <img src={pf.preview} alt="" className="w-8 h-8 object-cover rounded" />
+                      <img src={pf.preview} alt="" className="w-8 h-8 object-cover rounded-lg" />
                     )}
                     {pf.type === 'pdf' && (
-                      <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 shrink-0 text-text-secondary ml-1" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M4 18h12V6L8 2H4a2 2 0 00-2 2v12a2 2 0 002 2zM12 18h2V9h-2V18z" />
                       </svg>
                     )}
-                    <span className={`text-xs truncate max-w-28 ${dark ? 'text-neutral-200' : 'text-gray-700'}`}>{pf.file.name}</span>
+                    <span className="text-xs truncate max-w-28 text-text-primary">{pf.file.name}</span>
                     <button
                       onClick={() => onRemoveFile(pf.id)}
-                      className="text-red-500 hover:text-red-700 ml-0.5"
+                      className="p-1 rounded-md text-text-tertiary hover:text-danger hover:bg-danger/10 transition-colors"
+                      aria-label={`Remove ${pf.file.name}`}
                     >
-                      ×
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   </div>
                 ))}
@@ -291,15 +336,17 @@ export function ChatInterface({
 
           <form
             onSubmit={handleSubmit}
-            className={`flex items-end gap-2 rounded-2xl border p-2 ${dark ? 'border-[#383838] bg-[#2f2f2f]' : 'border-gray-200 bg-gray-50'}`}
+            className="flex items-end gap-1.5 rounded-[28px] border border-border bg-surface-elevated shadow-soft px-2.5 py-2 transition-colors focus-within:border-accent/50"
           >
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 text-gray-500 hover:text-gray-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors rounded-xl hover:bg-gray-200 dark:hover:bg-[#383838]"
+              className="p-2.5 text-text-tertiary hover:text-text-secondary transition-colors rounded-full hover:bg-surface-secondary active:scale-[0.96]"
+              aria-label="Attach files"
+              title="Attach files"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.121 8.121L20 13" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.121 8.121L20 13" />
               </svg>
             </button>
             <input
@@ -309,51 +356,54 @@ export function ChatInterface({
               accept="image/*,.pdf,.txt"
               onChange={handleFileUpload}
               className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
             />
             <button
               type="button"
               onClick={toggleVoice}
               title={isListening ? 'Stop listening' : 'Speak your symptoms'}
-              className={`p-2.5 transition-colors rounded-xl ${
+              aria-label={isListening ? 'Stop listening' : 'Dictate message'}
+              aria-pressed={isListening}
+              className={`p-2.5 transition-colors rounded-full active:scale-[0.96] ${
                 isListening
-                  ? 'text-white bg-red-500 hover:bg-red-600 animate-pulse'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-gray-200 dark:hover:bg-[#383838]'
+                  ? 'text-white bg-danger animate-pulse'
+                  : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-secondary'
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect x="9" y="2" width="6" height="12" rx="3" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 10a7 7 0 01-14 0m7 7v4m-4 0h8" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 10a7 7 0 01-14 0m7 7v4m-4 0h8" />
               </svg>
             </button>
+            <label htmlFor="chat-composer" className="sr-only">Ask a medical question</label>
             <textarea
+              id="chat-composer"
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={hasFiles ? 'Ask about the uploaded files...' : 'Ask a medical question...'}
+              placeholder={hasFiles ? 'Ask about the uploaded files...' : 'How can I help you today?'}
               rows={1}
-              className={`flex-1 resize-none bg-transparent px-3 py-2 text-sm focus:outline-none ${dark ? 'text-white placeholder-neutral-500' : 'text-gray-800 placeholder-gray-400'}`}
+              className="composer-textarea flex-1 resize-none bg-transparent px-2 py-2.5 text-[15px] leading-relaxed text-text-primary placeholder:text-text-tertiary min-h-[44px] max-h-[200px]"
             />
             <button
               type="submit"
-              disabled={(!input.trim() && !hasFiles) || isLoading}
-              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                (!input.trim() && !hasFiles) || isLoading
-                  ? dark
-                    ? 'bg-[#2f2f2f] text-neutral-500 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : dark
-                  ? 'bg-white text-black hover:bg-neutral-200 active:scale-95'
-                  : 'bg-black text-white hover:bg-gray-800 active:scale-95'
+              disabled={!canSend}
+              className={`w-9 h-9 mb-0.5 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-[0.94] ${
+                !canSend
+                  ? 'bg-surface-secondary text-text-tertiary cursor-not-allowed'
+                  : 'bg-accent text-accent-foreground hover:brightness-110 shadow-soft'
               }`}
               title="Send message"
+              aria-label="Send message"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4.5 h-4.5 w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19V5m0 0l-7 7m7-7l7 7" />
               </svg>
             </button>
           </form>
-          <p className={`text-center text-xs mt-2 ${dark ? 'text-neutral-500' : 'text-gray-400'}`}>
+          <p className="text-center text-[11px] sm:text-xs mt-2.5 text-text-tertiary">
             For informational purposes only. Always consult a healthcare professional.
           </p>
         </div>
