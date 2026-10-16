@@ -349,10 +349,13 @@ async def chat(
         if file_chunks_total <= 50:
             system_prompt += "\n\nNOTE: The uploaded file OCR produced no readable text. The image could not be interpreted."
     else:
-        context = llm_service.retrieval_service.get_context(request.message)
+        # Single retrieval pass: one embedding call per message. Calling
+        # get_context() + query() would embed the same text twice and burn
+        # through Mistral's per-minute quota twice as fast.
         sources = llm_service.retrieval_service.query(request.message)
-        if context:
-            system_prompt += f"\n\nRelevant medical context:\n{context}"
+        if sources:
+            context_parts = [f"Source: {s['title']}\n{s['content']}" for s in sources]
+            system_prompt += "\n\nRelevant medical context:\n" + "\n\n".join(context_parts)
 
     if settings.ENABLE_SCRAPER:
         _msg_lower = request.message.lower()
@@ -400,7 +403,7 @@ async def chat(
                 lambda m=model_name: llm_service.client.chat.complete(
                     model=m,
                     messages=messages,
-                    max_tokens=settings.MAX_TOKENS,
+                    max_tokens=settings.CHAT_MAX_TOKENS,
                     temperature=settings.TEMPERATURE,
                 ),
                 what=f"mistral chat ({model_name})",

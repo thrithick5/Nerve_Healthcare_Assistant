@@ -65,13 +65,14 @@ class LLMService:
     def generate_reply(self, message: str, conversation_id: str) -> tuple[str, str, list[dict]]:
         conv = self.conversation_service.add_message(conversation_id, "user", message)
 
-        context = self.retrieval_service.get_context(message)
+        # Single retrieval pass: one embedding call per message (see routes.py).
         sources = self.retrieval_service.query(message)
         history = self.conversation_service.get_history(conv.id)
 
         system_prompt = self.system_prompt.replace("{disclaimer}", self.settings.HEALTH_DISCLAIMER)
-        if context:
-            system_prompt += f"\n\nRelevant medical context:\n{context}"
+        if sources:
+            context_parts = [f"Source: {s['title']}\n{s['content']}" for s in sources]
+            system_prompt += "\n\nRelevant medical context:\n" + "\n\n".join(context_parts)
 
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(history)
@@ -102,7 +103,7 @@ class LLMService:
                     lambda m=model_name: self.client.chat.complete(
                         model=m,
                         messages=messages,
-                        max_tokens=self.settings.MAX_TOKENS,
+                        max_tokens=self.settings.CHAT_MAX_TOKENS,
                         temperature=self.settings.TEMPERATURE,
                     ),
                     what=f"mistral chat ({model_name})",

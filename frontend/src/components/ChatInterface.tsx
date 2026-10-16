@@ -46,9 +46,32 @@ function cleanErrorContent(content: string, kind: ErrorKind): string {
 
 const ERROR_HINT: Record<ErrorKind, string> = {
   tier: 'Admin: set MISTRAL_MODEL to mistral-small-latest on Render and redeploy.',
-  busy: 'Please wait about 30 seconds, then hit Retry.',
+  busy: 'Quota resets every minute — the retry button unlocks automatically.',
   network: 'The free-tier server may be waking up (can take ~50s) or your connection dropped. Hit Retry.',
   generic: 'Please try again.',
+}
+
+const RETRY_BUTTON_CLASS =
+  'mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-medium bg-surface-elevated border border-border text-text-primary shadow-subtle transition-all hover:border-accent/50 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed'
+
+// Cooldown retry: hammering Retry during a rate limit keeps the per-minute
+// quota exhausted longer. The button unlocks on its own after 30s.
+function BusyRetryButton({ onRetry, disabled }: { onRetry: () => void; disabled: boolean }) {
+  const [wait, setWait] = useState(30)
+  useEffect(() => {
+    if (wait <= 0) return
+    const t = setTimeout(() => setWait((w) => w - 1), 1000)
+    return () => clearTimeout(t)
+  }, [wait])
+  const locked = wait > 0
+  return (
+    <button onClick={onRetry} disabled={disabled || locked} className={RETRY_BUTTON_CLASS}>
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3m2 7a8 8 0 01-14 3" />
+      </svg>
+      {locked ? `Retry in ${wait}s` : 'Retry'}
+    </button>
+  )
 }
 
 function isErrorMessage(content: string): boolean {
@@ -268,16 +291,20 @@ export function ChatInterface({
                         <p className="text-sm font-medium text-text-primary mb-1">Something went wrong</p>
                         <p className="text-sm text-text-secondary leading-relaxed">{cleanErrorContent(msg.content, errorKind)}</p>
                         <p className="text-xs text-text-tertiary mt-2">{ERROR_HINT[errorKind]}</p>
-                        <button
-                          onClick={onRetry}
-                          disabled={isLoading}
-                          className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-medium bg-surface-elevated border border-border text-text-primary shadow-subtle transition-all hover:border-accent/50 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3m2 7a8 8 0 01-14 3" />
-                          </svg>
-                          Retry
-                        </button>
+                        {errorKind === 'busy' ? (
+                          <BusyRetryButton key={msg.id} onRetry={onRetry} disabled={isLoading} />
+                        ) : (
+                          <button
+                            onClick={onRetry}
+                            disabled={isLoading}
+                            className={RETRY_BUTTON_CLASS}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3m2 7a8 8 0 01-14 3" />
+                            </svg>
+                            Retry
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="text-[15px] leading-relaxed text-text-primary min-w-0">

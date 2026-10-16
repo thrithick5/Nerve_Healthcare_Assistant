@@ -24,6 +24,9 @@ class Settings(BaseSettings):
 
     MAX_HISTORY_LENGTH: int = 30
     MAX_TOKENS: int = 16000
+    # Cap per-reply output tokens: free-tier token quotas are per-minute and a
+    # 16k ceiling burns through them fast. Medical answers are concise by design.
+    CHAT_MAX_TOKENS: int = 2048
     TEMPERATURE: float = 0.3
 
     GOOGLE_CLIENT_ID: str = ""
