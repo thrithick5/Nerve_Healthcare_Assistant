@@ -125,12 +125,18 @@ def user_facing_message(exc: BaseException) -> str:
     """Short, non-technical message safe to show in the chat UI."""
     if is_tier_error(exc):
         return (
-            "The configured AI model is not available on the current Mistral plan. "
-            "Please set MISTRAL_MODEL to mistral-small-latest and redeploy."
+            "The configured AI model is not available. "
+            "Please set MISTRAL_MODEL to a model your OpenRouter key can use "
+            "and redeploy."
         )
     if is_retryable_mistral_error(exc):
         return (
             "The AI service is busy right now (rate limit / capacity). "
             "Please wait about 30 seconds and try again."
         )
-    return "The AI service returned an unexpected error. Please try again in a moment."
+    return (
+        "The AI service returned an unexpected error. "
+        "Please try again in a moment. If it keeps failing, check that "
+        "MISTRAL_API_KEY is a valid OpenRouter key with access to the model "
+        "set in MISTRAL_MODEL."
+    )

@@ -1,7 +1,11 @@
-from mistralai import Mistral
+import logging
+
+from openai import OpenAI
 from app.core.config import Settings
 from app.services.retrieval_service import RetrievalService
 from app.services.conversation_service import ConversationService
+
+logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """You are Nerve, an AI Healthcare Assistant providing informational support exclusively for medical, health, wellness, and healthcare-related topics.
@@ -59,7 +63,14 @@ class LLMService:
         self.settings = settings
         self.retrieval_service = retrieval_service
         self.conversation_service = conversation_service
-        self.client = Mistral(api_key=settings.MISTRAL_API_KEY)
+        # OpenRouter exposes an OpenAI-compatible API.
+        # MISTRAL_API_KEY is used as the OpenRouter API key.
+        # MISTRAL_MODEL is used as the OpenRouter chat model id.
+        # MISTRAL_EMBEDDING_MODEL is used as the OpenRouter embedding model id.
+        self.client = OpenAI(
+            api_key=settings.MISTRAL_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+        )
         self.system_prompt = SYSTEM_PROMPT
 
     def generate_reply(self, message: str, conversation_id: str) -> tuple[str, str, list[dict]]:
@@ -91,7 +102,7 @@ class LLMService:
         )
 
         model_candidates = [self.settings.MISTRAL_MODEL]
-        for fallback in ("mistral-small-latest", "open-mistral-7b"):
+        for fallback in ("nvidia/llama-3.1-nemotron-70b-instruct:free", "google/gemma-3-27b-it"):
             if fallback not in model_candidates:
                 model_candidates.append(fallback)
 
@@ -100,17 +111,22 @@ class LLMService:
         for model_name in model_candidates:
             try:
                 response = call_with_retry(
-                    lambda m=model_name: self.client.chat.complete(
+                    lambda m=model_name: self.client.chat.completions.create(
                         model=m,
                         messages=messages,
                         max_tokens=self.settings.CHAT_MAX_TOKENS,
                         temperature=self.settings.TEMPERATURE,
                     ),
-                    what=f"mistral chat ({model_name})",
+                    what=f"openrouter chat ({model_name})",
                 )
                 break
             except Exception as e:  # noqa: BLE001 - must classify any SDK error
                 last_err = e
+                logger.error(
+                    "openrouter chat (%s) failed: %s",
+                    model_name,
+                    e,
+                )
                 if is_tier_error(e):
                     continue  # try next model
                 break  # retried-out transient or fatal: no other model will help

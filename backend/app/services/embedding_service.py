@@ -1,11 +1,15 @@
-from mistralai import Mistral
+from openai import OpenAI
 from app.core.config import Settings
 from app.services.mistral_resilience import call_with_retry
 
 
 class EmbeddingService:
     def __init__(self, settings: Settings):
-        self.client = Mistral(api_key=settings.MISTRAL_API_KEY)
+        # OpenRouter embeddings use the OpenAI-compatible API.
+        self.client = OpenAI(
+            api_key=settings.MISTRAL_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+        )
         self.model = settings.MISTRAL_EMBEDDING_MODEL
 
     def embed(self, text: str) -> list[float]:
@@ -15,9 +19,9 @@ class EmbeddingService:
         response = call_with_retry(
             lambda: self.client.embeddings.create(
                 model=self.model,
-                inputs=text
+                input=text,
             ),
-            what="mistral embeddings",
+            what="openrouter embeddings",
         )
         return response.data[0].embedding
 
@@ -25,8 +29,8 @@ class EmbeddingService:
         response = call_with_retry(
             lambda: self.client.embeddings.create(
                 model=self.model,
-                inputs=texts
+                input=texts,
             ),
-            what="mistral embeddings (batch)",
+            what="openrouter embeddings (batch)",
         )
         return [item.embedding for item in response.data]
