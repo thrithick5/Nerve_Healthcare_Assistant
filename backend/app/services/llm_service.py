@@ -1,4 +1,6 @@
-from mistralai import Mistral
+import os
+
+from openai import OpenAI
 from app.core.config import Settings
 from app.services.retrieval_service import RetrievalService
 from app.services.conversation_service import ConversationService
@@ -59,7 +61,13 @@ class LLMService:
         self.settings = settings
         self.retrieval_service = retrieval_service
         self.conversation_service = conversation_service
-        self.client = Mistral(api_key=settings.MISTRAL_API_KEY)
+        # OpenRouter speaks the OpenAI-compatible API.
+        # MISTRAL_API_KEY is reinterpreted as the OpenRouter API key.
+        # MISTRAL_MODEL is reinterpreted as the OpenRouter model id.
+        self.client = OpenAI(
+            api_key=settings.MISTRAL_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+        )
         self.system_prompt = SYSTEM_PROMPT
 
     def generate_reply(self, message: str, conversation_id: str) -> tuple[str, str, list[dict]]:
@@ -91,7 +99,7 @@ class LLMService:
         )
 
         model_candidates = [self.settings.MISTRAL_MODEL]
-        for fallback in ("mistral-small-latest", "open-mistral-7b"):
+        for fallback in ("openai/gpt-oss-20b", "qwen/qwen3-235b-a22b-instruct"):
             if fallback not in model_candidates:
                 model_candidates.append(fallback)
 
@@ -100,13 +108,13 @@ class LLMService:
         for model_name in model_candidates:
             try:
                 response = call_with_retry(
-                    lambda m=model_name: self.client.chat.complete(
+                    lambda m=model_name: self.client.chat.completions.create(
                         model=m,
                         messages=messages,
                         max_tokens=self.settings.CHAT_MAX_TOKENS,
                         temperature=self.settings.TEMPERATURE,
                     ),
-                    what=f"mistral chat ({model_name})",
+                    what=f"openrouter chat ({model_name})",
                 )
                 break
             except Exception as e:  # noqa: BLE001 - must classify any SDK error

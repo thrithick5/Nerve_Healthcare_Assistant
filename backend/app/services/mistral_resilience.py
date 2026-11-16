@@ -55,9 +55,21 @@ _RETRYABLE_MARKERS = (
 
 
 def is_tier_error(exc: BaseException) -> bool:
-    """True when the model is not available on the current Mistral plan."""
+    """True when the requested model is unavailable / not allowed on the plan.
+
+    Covers both legacy Mistral errors and OpenRouter model-not-available style
+    failures so the caller can fall back to the next model in the list.
+    """
     msg = str(exc)
-    return "tier_not_allowed" in msg or "1910" in msg or "403" in msg
+    lowered = msg.lower()
+    return (
+        "tier_not_allowed" in lowered
+        or "1910" in msg
+        or "403" in msg
+        or "model_not_found" in lowered
+        or "model does not exist" in lowered
+        or "not found" in lowered and "model" in lowered
+    )
 
 
 def is_retryable_mistral_error(exc: BaseException) -> bool:

@@ -10,8 +10,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "healthcare-assistant-secret-key-change-in-production-2024"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
+    # When using OpenRouter for chat, MISTRAL_API_KEY is the OpenRouter API key
+    # and MISTRAL_MODEL is the OpenRouter model id (for example openai/gpt-oss-120b).
     MISTRAL_API_KEY: Optional[str] = None
-    MISTRAL_MODEL: str = "mistral-small-latest"
+    MISTRAL_MODEL: str = "openai/gpt-oss-120b"
     MISTRAL_EMBEDDING_MODEL: str = "mistral-embed"
 
     DATABASE_URL: str = "sqlite:///./data/healthcare.db"
