@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     # and MISTRAL_MODEL is the OpenRouter model id (for example openai/gpt-oss-120b).
     MISTRAL_API_KEY: Optional[str] = None
     MISTRAL_MODEL: str = "openai/gpt-oss-120b"
-    MISTRAL_EMBEDDING_MODEL: str = "mistral-embed"
+    # OpenRouter embedding model. If this is not available for free on your
+    # OpenRouter account, set MISTRAL_EMBEDDING_MODEL to another OpenAI-compatible
+    # embedding model id that your account can use.
+    MISTRAL_EMBEDDING_MODEL: str = "salesforce/snowflake-arctic-embed-l-v2.0"
 
     DATABASE_URL: str = "sqlite:///./data/healthcare.db"
     CHROMA_PERSIST_DIR: str = "data/chroma_db"
