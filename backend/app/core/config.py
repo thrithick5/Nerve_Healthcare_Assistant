@@ -13,11 +13,8 @@ class Settings(BaseSettings):
     # When using OpenRouter for chat, MISTRAL_API_KEY is the OpenRouter API key
     # and MISTRAL_MODEL is the OpenRouter model id (for example openai/gpt-oss-120b).
     MISTRAL_API_KEY: Optional[str] = None
-    MISTRAL_MODEL: str = "openai/gpt-oss-120b"
-    # OpenRouter embedding model. If this free model is unavailable or rate-
-    # limited at request time, RAG is skipped gracefully and the LLM still
-    # answers. To use a different model, set MISTRAL_EMBEDDING_MODEL in Render.
-    MISTRAL_EMBEDDING_MODEL: str = "nvidia/nemotron-3.5-embed-1b:free"
+    MISTRAL_MODEL: str = "mistral-small-latest"
+    MISTRAL_EMBEDDING_MODEL: str = "mistral-embed"
 
     DATABASE_URL: str = "sqlite:///./data/healthcare.db"
     CHROMA_PERSIST_DIR: str = "data/chroma_db"
