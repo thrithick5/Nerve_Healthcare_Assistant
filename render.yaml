@@ -7,7 +7,7 @@ databases:
     plan: free
     databaseName: nerve_healthcare
     user: nerve
-    region: singapore
+    region: oregon
 
 services:
   - type: web
@@ -15,7 +15,7 @@ services:
     env: docker
     repo: https://github.com/thrithick5/Nerve_Healthcare_Assistant
     branch: main
-    region: singapore
+    region: oregon
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /api/v1/health

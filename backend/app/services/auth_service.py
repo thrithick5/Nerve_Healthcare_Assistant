@@ -84,6 +84,10 @@ def get_user_from_token(db: Session, token: str) -> Optional[User]:
 
 
 def verify_google_token(credential: str) -> Optional[dict]:
+    if not settings.GOOGLE_CLIENT_ID:
+        logger = __import__('logging').getLogger(__name__)
+        logger.warning("GOOGLE_CLIENT_ID is not configured; rejecting Google login")
+        return None
     try:
         info = id_token.verify_oauth2_token(
             credential,
@@ -93,7 +97,9 @@ def verify_google_token(credential: str) -> Optional[dict]:
         if info.get("iss") not in ["accounts.google.com", "https://accounts.google.com"]:
             return None
         return info
-    except Exception:
+    except Exception as e:
+        logger = __import__('logging').getLogger(__name__)
+        logger.error(f"Google token verification failed: {e}")
         return None
 
 
